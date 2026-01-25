@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/kartikx04/chat/controllers"
 )
 
 func health(w http.ResponseWriter, r *http.Request) {
@@ -13,6 +15,11 @@ func health(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", controllers.RenderPage)
+	mux.HandleFunc("/google-sso", controllers.GoogleSignOn)
+	mux.HandleFunc("/callback", controllers.Callback)
+
 	srv := &http.Server{
 		Handler:      mux,
 		Addr:         "127.0.0.1:8007",
