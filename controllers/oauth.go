@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/kartikx04/chat/utils"
@@ -41,4 +43,49 @@ func GoogleSignOn(res http.ResponseWriter, req *http.Request) {
 	// returns a URL with attached tokenString
 	url := utils.OAuthgolang.AuthCodeURL(tokenString)
 	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
+}
+
+// Callback is triggered when Google Cloud Console redirects to /callback. Coupled with GetUserData
+// it verifies authorization request and unmarshals returned user data into our created OAuthData data structure
+func Callback(res http.ResponseWriter, req *http.Request) {
+	state := req.FormValue("state")
+	code := req.FormValue("code")
+
+	// returns the created session
+	session, err := utils.Store.Get(req, "tokenSession")
+	if err != nil {
+		fmt.Fprintf(res, "error: %v", err)
+	}
+
+	// returns the value of tokenStringKey
+	dataToken, ok := session.Values["tokenStringKey"].(string)
+	if !ok {
+		dataToken = "token not found in the session"
+	}
+
+	data, err := utils.GetUserData(state, code, dataToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// the session cookie is deleted immediately
+	session.Options.MaxAge = -1
+	session.Save(req, res)
+
+	var authStruct utils.OAuthData
+
+	// Google Cloud Console returns a JSON structure containing "id",,"email", "verified_email" and "picture"
+	// this converts the JSON structure into our created OAuthData structure
+	err = json.Unmarshal([]byte(data), &authStruct)
+	if err != nil {
+		fmt.Fprintf(res, "error: %v", err)
+	}
+
+	// returns a response a response based on verification success or failure
+	status := authStruct.Verified_email
+	if status {
+		fmt.Fprintf(res, "success: %s is a verified user\n", authStruct.Email)
+	} else {
+		fmt.Fprint(res, "failed verification")
+	}
 }
