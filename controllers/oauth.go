@@ -3,9 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
-	"text/template"
 
 	"github.com/kartikx04/chat/utils"
 	"golang.org/x/oauth2"
@@ -82,12 +82,23 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(res, "error: %v", err)
 	}
 
-	// returns a response a response based on verification success or failure
+	// if the email is valid then add the user information to cookie and save it.
 	status := authStruct.Verified_email
 	if status {
-		fmt.Fprintf(res, "success: %s is a verified user\n", authStruct.Email)
+		session, _ := utils.Store.Get(req, "userSession")
+
+		session.Values = map[any]any{
+			"email":   authStruct.Email,
+			"picture": authStruct.Picture,
+		}
+
+		session.Save(req, res)
+
+		http.Redirect(res, req, "/home", http.StatusSeeOther)
+		return
+
 	} else {
-		fmt.Fprint(res, "failed verification")
+		return
 	}
 }
 
@@ -104,4 +115,28 @@ func RenderPage(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// Home renders a HTML page for logged in users
+func Home(res http.ResponseWriter, req *http.Request) {
+	session, _ := utils.Store.Get(req, "userSession")
+
+	email, ok := session.Values["email"].(string)
+	if !ok {
+		http.Redirect(res, req, "/", http.StatusSeeOther)
+		return
+	}
+
+	picture, _ := session.Values["picture"].(string)
+
+	tmpl, err := template.ParseFiles("assets/home.html")
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tmpl.Execute(res, map[string]string{
+		"Email":   email,
+		"Picture": picture,
+	})
 }

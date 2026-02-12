@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Home</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #0f172a; /* slate-900 */
+            color: #e5e7eb;     /* gray-200 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: #020617; /* slate-950 */
+            border-radius: 14px;
+            padding: 32px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+
+        .avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #334155;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .email {
+            margin-top: 6px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            word-break: break-all;
+        }
+
+        .divider {
+            margin: 24px 0;
+            height: 1px;
+            background: #1e293b;
+        }
+
+        .coming-soon {
+            font-size: 0.95rem;
+            color: #cbd5f5;
+        }
+
+        .badge {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            border-radius: 999px;
+            background: #1d4ed8;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <img
+            class="avatar"
+            src="{{.Picture}}"
+            alt="User profile picture"
+            referrerpolicy="no-referrer"
+        />
+
+        <h2>Successfully logged in</h2>
+
+        <div class="email">
+            {{.Email}}
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="coming-soon">
+            🚧 Features are coming soon.
+        </div>
+
+        <div class="badge">
+            Early Access
+        </div>
+    </div>
+
+</body>
+</html>

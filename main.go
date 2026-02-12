@@ -19,6 +19,7 @@ func main() {
 	mux.HandleFunc("/", controllers.RenderPage)
 	mux.HandleFunc("/google-sso", controllers.GoogleSignOn)
 	mux.HandleFunc("/callback", controllers.Callback)
+	mux.HandleFunc("/home", controllers.Home)
 
 	srv := &http.Server{
 		Handler:      mux,
