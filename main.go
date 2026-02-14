@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/kartikx04/chat/controllers"
+	"github.com/kartikx04/chat/models"
+	"github.com/kartikx04/chat/utils"
 )
 
 func health(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +22,18 @@ func main() {
 	mux.HandleFunc("/google-sso", controllers.GoogleSignOn)
 	mux.HandleFunc("/callback", controllers.Callback)
 	mux.HandleFunc("/home", controllers.Home)
+
+	config := models.Config{
+		Host:     utils.LoadFile("DB_HOST"),
+		Port:     utils.LoadFile("DB_PORT"),
+		User:     utils.LoadFile("DB_USER"),
+		Password: utils.LoadFile("DB_PASSWORD"),
+		DBName:   utils.LoadFile("DB_NAME"),
+		SSLMode:  utils.LoadFile("DB_SSLMODE"),
+	}
+
+	// Initialize DB
+	models.InitDB(config)
 
 	srv := &http.Server{
 		Handler:      mux,
