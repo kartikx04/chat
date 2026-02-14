@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kartikx04/chat/controllers"
 	"github.com/kartikx04/chat/models"
+	"github.com/kartikx04/chat/routes"
 	"github.com/kartikx04/chat/utils"
 )
 
@@ -18,11 +18,11 @@ func health(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", controllers.RenderPage)
-	mux.HandleFunc("/google-sso", controllers.GoogleSignOn)
-	mux.HandleFunc("/callback", controllers.Callback)
-	mux.HandleFunc("/home", controllers.Home)
+	// routes
+	routes.UIRoutes(mux)
+	routes.AuthRoutes(mux)
 
+	//config for database
 	config := models.Config{
 		Host:     utils.LoadFile("DB_HOST"),
 		Port:     utils.LoadFile("DB_PORT"),
@@ -35,6 +35,7 @@ func main() {
 	// Initialize DB
 	models.InitDB(config)
 
+	// server instance
 	srv := &http.Server{
 		Handler:      mux,
 		Addr:         "127.0.0.1:8007",
@@ -44,7 +45,10 @@ func main() {
 
 	fmt.Printf("listening on port: %s\n", srv.Addr)
 
+	// test route health
 	mux.HandleFunc("/health", health)
+
+	// running server
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
