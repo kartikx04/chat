@@ -1,8 +1,9 @@
-package models
+package database
 
 import (
 	"fmt"
 
+	"github.com/kartikx04/chat/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -27,7 +28,7 @@ func InitDB(cfg Config) {
 		panic(err)
 	}
 
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}); err != nil {
 		panic(err)
 	}
 

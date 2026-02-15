@@ -14,6 +14,7 @@ type User struct {
 }
 
 type OAuthData struct {
+	gorm.Model
 	Id            string `gorm:"primaryKey" json:"id"`
 	Email         string `json:"email"`
 	VerifiedEmail bool   `json:"verified_email"`

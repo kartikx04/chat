@@ -1,0 +1,16 @@
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    auth0_id VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    picture VARCHAR(255),
+    role VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE oauth_data (
+    id INT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    verified_email BOOLEAN NOT NULL,
+    picture VARCHAR(255)
+);

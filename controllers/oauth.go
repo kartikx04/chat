@@ -85,22 +85,20 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	// if the email is valid then add the user information to cookie and save it.
 	status := authStruct.VerifiedEmail
-	if status {
-		session, _ := utils.Store.Get(req, "userSession")
-
-		session.Values = map[any]any{
-			"email":   authStruct.Email,
-			"picture": authStruct.Picture,
-		}
-
-		session.Save(req, res)
-
-		http.Redirect(res, req, "/home", http.StatusSeeOther)
-		return
-
-	} else {
+	if !status {
 		return
 	}
+
+	session, _ = utils.Store.Get(req, "userSession")
+
+	session.Values = map[any]any{
+		"email":   authStruct.Email,
+		"picture": authStruct.Picture,
+	}
+
+	session.Save(req, res)
+
+	http.Redirect(res, req, "/home", http.StatusSeeOther)
 }
 
 // RenderPage renders a simple HTML page to try out Google Sign-On

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kartikx04/chat/models"
+	"github.com/kartikx04/chat/database"
 	"github.com/kartikx04/chat/routes"
 	"github.com/kartikx04/chat/utils"
 )
@@ -23,7 +23,7 @@ func main() {
 	routes.AuthRoutes(mux)
 
 	//config for database
-	config := models.Config{
+	config := database.Config{
 		Host:     utils.LoadFile("DB_HOST"),
 		Port:     utils.LoadFile("DB_PORT"),
 		User:     utils.LoadFile("DB_USER"),
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// Initialize DB
-	models.InitDB(config)
+	database.InitDB(config)
 
 	// server instance
 	srv := &http.Server{
