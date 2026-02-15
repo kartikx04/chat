@@ -21,13 +21,6 @@ const (
 	tokenLength = 15
 )
 
-type OAuthData struct {
-	Id             string `json:"id"`
-	Email          string `json:"email"`
-	Verified_email bool   `json:"verified_email"`
-	Picture        string `json:"picture"`
-}
-
 // GenerateRandomString generates a random string of the specified length(15).
 func TokenString() (string, error) {
 	charsetLength := len(tokenSet)

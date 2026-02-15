@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kartikx04/chat/models"
 	"github.com/kartikx04/chat/utils"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -73,7 +74,7 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	session.Options.MaxAge = -1
 	session.Save(req, res)
 
-	var authStruct utils.OAuthData
+	var authStruct models.OAuthData
 
 	// Google Cloud Console returns a JSON structure containing "id",,"email", "verified_email" and "picture"
 	// this converts the JSON structure into our created OAuthData structure
@@ -83,7 +84,7 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// if the email is valid then add the user information to cookie and save it.
-	status := authStruct.Verified_email
+	status := authStruct.VerifiedEmail
 	if status {
 		session, _ := utils.Store.Get(req, "userSession")
 
