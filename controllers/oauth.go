@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kartikx04/chat/database"
 	"github.com/kartikx04/chat/models"
 	"github.com/kartikx04/chat/utils"
 	"golang.org/x/oauth2"
@@ -23,6 +24,7 @@ func init() {
 		Scopes:   []string{"https://www.googleapis.com/auth/userinfo.email"},
 		Endpoint: google.Endpoint, //Endpoint is Google's OAuth 2.0 default endpoint
 	}
+
 }
 
 // Through GoogleSignOn, a URL is returned to the consent page created on Google Console. A security token string is provided which will be parsed and verified during redirect callback.
@@ -84,8 +86,14 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// if the email is valid then add the user information to cookie and save it.
-	status := authStruct.VerifiedEmail
-	if !status {
+	if !authStruct.VerifiedEmail {
+		return
+	}
+
+	userRepo := database.NewUserRepository(database.DB)
+
+	_, err1 := userRepo.CreateUser(authStruct.Id, authStruct.Email, "username", authStruct.Picture)
+	if err1 != nil {
 		return
 	}
 

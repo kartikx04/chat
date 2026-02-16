@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
+	"log"
 
-	"github.com/kartikx04/chat/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -25,12 +25,12 @@ func InitDB(cfg Config) {
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic(err)
+		log.Println("db initialize error:", err)
 	}
 
-	if err := db.AutoMigrate(&models.User{}); err != nil {
-		panic(err)
-	}
+	// if err := db.AutoMigrate(&models.User{}); err != nil {
+	// 	log.Println("auto migrate error:", err)
+	// }
 
 	fmt.Println("Migrated database")
 
