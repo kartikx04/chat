@@ -73,7 +73,9 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	data, err := utils.GetUserData(state, code, dataToken)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		http.Error(res, "internal error", 500)
+		return
 	}
 
 	// the session cookie is deleted immediately
@@ -111,7 +113,9 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	} else if err2 != nil {
-		log.Fatal(err2)
+		log.Println(err2)
+		http.Error(res, "internal error", 500)
+		return
 	}
 
 	session, _ = utils.Store.Get(req, "userSession")
