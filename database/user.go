@@ -45,3 +45,14 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) GetUserByAuthOId(authOId string) (*models.User, error) {
+	var user models.User
+
+	result := r.db.Where("auth_o_id = ?", authOId).First(&user)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}

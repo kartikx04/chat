@@ -96,8 +96,8 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	userRepo := database.NewUserRepository(database.DB)
 
-	// check if email already in database
-	_, err2 := userRepo.GetUserByEmail(authStruct.Email)
+	// check if authOId already in database
+	_, err2 := userRepo.GetUserByAuthOId(authStruct.Id)
 
 	if err2 == gorm.ErrRecordNotFound {
 		//generate random username
