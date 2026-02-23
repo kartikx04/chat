@@ -38,9 +38,9 @@ func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*
 func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 
-	result := r.db.First(&user, "email = ?", email)
+	result := r.db.Where("email = ?", email).First(&user)
 
-	if result != nil {
+	if result.Error != nil {
 		return nil, result.Error
 	}
 	return &user, nil

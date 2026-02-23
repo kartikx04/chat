@@ -6,6 +6,10 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/goombaio/namegenerator"
+	"gorm.io/gorm"
 
 	"github.com/kartikx04/chat/database"
 	"github.com/kartikx04/chat/models"
@@ -92,9 +96,22 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	userRepo := database.NewUserRepository(database.DB)
 
-	_, err1 := userRepo.CreateUser(authStruct.Id, authStruct.Email, "username", authStruct.Picture)
-	if err1 != nil {
-		return
+	// check if email already in database
+	_, err2 := userRepo.GetUserByEmail(authStruct.Email)
+
+	if err2 == gorm.ErrRecordNotFound {
+		//generate random username
+		seed := time.Now().UTC().UnixNano()
+		nameGenerator := namegenerator.NewNameGenerator(seed)
+
+		name := nameGenerator.Generate()
+
+		_, err1 := userRepo.CreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
+		if err1 != nil {
+			return
+		}
+	} else if err2 != nil {
+		log.Fatal(err2)
 	}
 
 	session, _ = utils.Store.Get(req, "userSession")
@@ -107,6 +124,18 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	session.Save(req, res)
 
 	http.Redirect(res, req, "/home", http.StatusSeeOther)
+}
+
+func Logout(res http.ResponseWriter, req *http.Request) {
+	http.SetCookie(res, &http.Cookie{
+		Name:     "userSession",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // Set MaxAge to -1 to delete the cookie
+		HttpOnly: true,
+	})
+	http.Redirect(res, req, "/", http.StatusSeeOther)
+	fmt.Printf("user logged out successfully")
 }
 
 // RenderPage renders a simple HTML page to try out Google Sign-On

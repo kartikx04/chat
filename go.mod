@@ -7,6 +7,7 @@ toolchain go1.24.12
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
