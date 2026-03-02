@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/kartikx04/chat/internal/controllers"
 	"github.com/kartikx04/chat/internal/database"
-	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
 	"github.com/kartikx04/chat/pkg"
 )
 
@@ -20,6 +20,5 @@ func main() {
 	// Initialize DB
 	database.InitDB(config)
 
-	// Initialize redis
-	redisrepo.InitRedis()
+	controllers.StartHTTPServer()
 }
