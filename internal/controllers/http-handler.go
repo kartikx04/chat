@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
 	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
+	"github.com/kartikx04/chat/pkg"
 	"github.com/rs/cors"
 )
 
@@ -32,6 +34,6 @@ func StartHTTPServer() {
 	// Use default options
 	handler := cors.Default().Handler(r)
 
-	log.Println("Server running on :8007")
-	http.ListenAndServe(":8007", handler)
+	log.Printf("Server running on :%s\n", pkg.LoadFile("SERVER_PORT"))
+	http.ListenAndServe(fmt.Sprintf(":%s", pkg.LoadFile("SERVER_PORT")), handler)
 }
