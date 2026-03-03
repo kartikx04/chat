@@ -2,7 +2,8 @@ package redisrepo
 
 import (
 	"fmt"
-	"time"
+
+	"github.com/google/uuid"
 )
 
 func userSetKey() string {
@@ -14,7 +15,7 @@ func sessionKey(client string) string {
 }
 
 func chatKey() string {
-	return fmt.Sprintf("chat#%d", time.Now().UnixMilli())
+	return fmt.Sprintf("chat#%s", uuid.New().String())
 }
 
 func chatIndex() string {
