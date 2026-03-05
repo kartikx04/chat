@@ -1,9 +1,6 @@
 package database
 
 import (
-	"time"
-
-	"github.com/google/uuid"
 	"github.com/kartikx04/chat/internal/models"
 	"gorm.io/gorm"
 )
@@ -18,13 +15,11 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 
 func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*models.User, error) {
 	user := &models.User{
-		Id:        uuid.New(),
-		AuthOId:   authOId,
-		Email:     email,
-		Username:  username,
-		Picture:   picture,
-		Role:      "user",
-		CreatedAt: time.Now(),
+		AuthOId:  authOId,
+		Email:    email,
+		Username: username,
+		Picture:  picture,
+		Role:     "user",
 	}
 
 	result := r.db.Create(user) // ← GORM handles INSERT
