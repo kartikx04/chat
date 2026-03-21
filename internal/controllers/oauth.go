@@ -12,7 +12,6 @@ import (
 	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/internal/models"
 	"github.com/kartikx04/chat/pkg"
-	"gorm.io/gorm"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -98,22 +97,12 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	userRepo := database.NewUserRepository(database.DB)
 
-	// check if authOId already in database
-	_, err2 := userRepo.GetUserByAuthOId(authStruct.Id)
+	seed := time.Now().UTC().UnixNano()
+	name := namegenerator.NewNameGenerator(seed).Generate()
 
-	if err2 == gorm.ErrRecordNotFound {
-		//generate random username
-		seed := time.Now().UTC().UnixNano()
-		nameGenerator := namegenerator.NewNameGenerator(seed)
-
-		name := nameGenerator.Generate()
-
-		_, err1 := userRepo.CreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
-		if err1 != nil {
-			return
-		}
-	} else if err2 != nil {
-		log.Println(err2)
+	_, err = userRepo.GetOrCreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
+	if err != nil {
+		log.Println(err)
 		http.Error(res, "internal error", 500)
 		return
 	}

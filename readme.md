@@ -23,4 +23,4 @@ REDIS_HOST=
 REDIS_PASSWORD=
 
 # migrate database
-migrate -path ./database/migrations -database "postgresql://postgres:password@localhost:5432/chat?sslmode=disable" up
+migrate -path ./internal/database/migrations -database "postgresql://postgres:password@localhost:5432/chat?sslmode=disable" up

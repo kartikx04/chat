@@ -3,9 +3,13 @@ package database
 import (
 	"fmt"
 	"log"
+	"os"
+	"time"
 
+	"github.com/kartikx04/chat/pkg"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Config struct {
@@ -21,18 +25,37 @@ var DB *gorm.DB
 
 func InitDB(cfg Config) {
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s", cfg.Host, cfg.User, cfg.Password, cfg.DBName, cfg.Port, cfg.SSLMode)
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		cfg.Host, cfg.User, cfg.Password, cfg.DBName, cfg.Port, cfg.SSLMode,
+	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Println("db initialize error:", err)
+	// Set log level based on ENV
+	logLevel := logger.Warn // default (clean)
+
+	if pkg.LoadFile("ENV") == "development" {
+		logLevel = logger.Info // show SQL queries
 	}
 
-	// if err := db.AutoMigrate(&models.User{}); err != nil {
-	// 	log.Println("auto migrate error:", err)
-	// }
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             time.Second, // log slow queries
+			LogLevel:                  logLevel,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  true,
+		},
+	)
 
-	fmt.Println("Migrated database")
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
+
+	if err != nil {
+		log.Fatal("db initialize error:", err)
+	}
+
+	fmt.Println("✅ Database connected")
 
 	DB = db
 }
