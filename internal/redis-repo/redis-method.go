@@ -5,59 +5,68 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/kartikx04/chat/internal/models"
 )
 
-func CreateChat(c *models.Chat) (string, error) {
-	chatKey := chatKey()
-	fmt.Printf("chat key:%s\n", chatKey)
+func CreateChat(c *models.Chat) (uuid.UUID, error) {
+	chatId := NewChatID()
+	fmt.Printf("chat id:%s\n", chatId)
 
-	by, _ := json.Marshal(c)
+	c.Id = chatId
 
+	by, err := json.Marshal(c)
+	if err != nil {
+		return uuid.Nil, err
+	}
 	res, err := redisClient.Do(
 		context.Background(),
 		"JSON.SET",
-		chatKey,
+		fmt.Sprint(chatKeyPrefix, chatId.String()),
 		"$",
 		string(by),
 	).Result()
 
 	if err != nil {
 		log.Println("error while setting chat json: ", err)
+		return uuid.Nil, err
 	}
 
 	log.Println("chat successfully set: ", res)
 
-	return chatKey, nil
+	return chatId, nil
 }
 
-func CreateFetchChatBetweenIndex() {
+func CreateChatIndex() {
 	res, err := redisClient.Do(context.Background(),
 		"FT.CREATE",
-		chatIndex(),
+		ChatIndexKey(),
 		"ON", "JSON",
 		"PREFIX", "1", "chat#",
-		"SCHEMA", "$.from", "AS", "from", "TAG",
-		"$.to", "AS", "to", "TAG",
-		"$.timestamp", "AS", "timestamp", "NUMERIC", "SORTABLE",
+		"SCHEMA",
+		"$.from_id", "AS", "from_id", "TAG",
+		"$.to_id", "AS", "to_id", "TAG",
+		"$.created_at", "AS", "created_at", "NUMERIC", "SORTABLE",
 	).Result()
+	if err != nil && !strings.Contains(err.Error(), "Index already exists") {
+		log.Println(err)
+	}
 
 	fmt.Println(res, err)
 }
 
 func FetchChatBetween(id1, id2, fromTS, toTS string) ([]models.Chat, error) {
-	// redis-cli
-	// SYNTAX: FT.SEARCH index query
-	// FT.SEARCH idx#chats '@from:{id2|id1} @to:{id1|id2} @timestamp:[0 +inf]'
-	query := fmt.Sprintf("@from:{%s|%s} @to:{%s|%s} @timestamp:[%s %s]",
+	query := fmt.Sprintf("@from_id:{%s|%s} @to_id:{%s|%s} @created_at:[%s %s]",
 		id1, id2, id1, id2, fromTS, toTS)
 
 	res, err := redisClient.Do(context.Background(),
 		"FT.SEARCH",
-		chatIndex(),
+		ChatIndexKey(),
 		query,
-		"SORTBY", "timestamp", "DESC",
+		"SORTBY", "created_at", "DESC",
+		"LIMIT", "0", "50",
 	).Result()
 
 	if err != nil {

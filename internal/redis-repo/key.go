@@ -1,27 +1,34 @@
 package redisrepo
 
-import (
-	"fmt"
+import "github.com/google/uuid"
 
-	"github.com/google/uuid"
-)
-
-func userSetKey() string {
+// Static keys
+func UserSetKey() string {
 	return "users"
 }
 
-func sessionKey(client string) string {
-	return "session#" + client
-}
-
-func chatKey() string {
-	return fmt.Sprintf("chat#%s", uuid.New().String())
-}
-
-func chatIndex() string {
+func ChatIndexKey() string {
 	return "chat#idx"
 }
 
-func contactListKey(username string) string {
+// Session key
+func SessionKey(client string) string {
+	return "session#" + client
+}
+
+// Contact list
+func ContactListKey(username string) string {
 	return "contacts:" + username
+}
+
+// Chat keys
+const chatKeyPrefix = "chat#"
+
+func ChatKey(id uuid.UUID) string {
+	return chatKeyPrefix + id.String()
+}
+
+// ID generator
+func NewChatID() uuid.UUID {
+	return uuid.New()
 }
