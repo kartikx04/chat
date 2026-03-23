@@ -2,9 +2,10 @@ package redisrepo
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 
-	"github.com/kartikx04/chat/pkg"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -12,11 +13,15 @@ var redisClient *redis.Client
 
 // Initialize Redis Connection
 func InitRedis() *redis.Client {
-	// server instance
+	addr := fmt.Sprintf("%s:%s",
+		os.Getenv("REDIS_HOST"),
+		os.Getenv("REDIS_PORT"),
+	)
 
+	// server instance
 	conn := redis.NewClient(&redis.Options{
-		Addr:     pkg.LoadFile("REDIS_HOST"),
-		Password: pkg.LoadFile("REDIS_PASSWORD"),
+		Addr:     addr,
+		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,
 	})
 

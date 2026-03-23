@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	pkg.InitEnv()
 	//config for database
 	config := database.Config{
 		Host:     pkg.LoadFile("DB_HOST"),
