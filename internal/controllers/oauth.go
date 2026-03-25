@@ -67,14 +67,13 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	// returns the value of tokenStringKey
 	dataToken, ok := session.Values["tokenStringKey"].(string)
 	if !ok {
-		http.Error(res, "session expired or invalid", 400)
-		return
+		dataToken = "token not found in the session"
 	}
 
 	data, err := pkg.GetUserData(state, code, dataToken)
 	if err != nil {
-		log.Println("GetUserData error:", err)
-		http.Error(res, err.Error(), 500)
+		log.Println(err)
+		http.Error(res, "internal error", 500)
 		return
 	}
 
@@ -103,8 +102,8 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	_, err = userRepo.GetOrCreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
 	if err != nil {
-		log.Println("GetorCreateUser error:", err)
-		http.Error(res, err.Error(), 500)
+		log.Println(err)
+		http.Error(res, "internal error", 500)
 		return
 	}
 
