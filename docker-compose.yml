@@ -10,6 +10,7 @@ services:
       - .env
     depends_on:
       - redis
+      - postgres   # 👈 ADD THIS
     restart: always
 
   redis:
@@ -17,4 +18,15 @@ services:
     container_name: chat_redis
     ports:
       - "6379:6379"
+    restart: always
+
+  postgres:   # 👈 ADD THIS WHOLE BLOCK
+    image: postgres:15-alpine
+    container_name: chat_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: chat
+    ports:
+      - "5432:5432"
     restart: always
