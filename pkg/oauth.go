@@ -16,6 +16,16 @@ var (
 	Store       = sessions.NewCookieStore([]byte(LoadFile("TOKEN_SECRET")))
 )
 
+func init() {
+	Store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   3600,
+		HttpOnly: true,
+		Secure:   false,                // for localhost
+		SameSite: http.SameSiteLaxMode, // IMPORTANT
+	}
+}
+
 const (
 	tokenSet    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	tokenLength = 15
