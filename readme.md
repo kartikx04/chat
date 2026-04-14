@@ -26,3 +26,5 @@ REDIS_PASSWORD=
 migrate -path ./internal/database/migrations -database "postgresql://postgres:password@localhost:5432/chat?sslmode=disable" up
 
 npm install -g wscat
+
+docker exec -it chat_app sh

@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kartikx04/chat/internal/models"
 	"github.com/kartikx04/chat/pkg"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -55,7 +56,13 @@ func InitDB(cfg Config) {
 		log.Fatal("db initialize error:", err)
 	}
 
-	fmt.Println("✅ Database connected")
-
 	DB = db
+
+	// ✅ migrate
+	err = DB.AutoMigrate(&models.Chat{})
+	if err != nil {
+		log.Fatal("migration failed:", err)
+	}
+
+	fmt.Println("✅ Database connected")
 }

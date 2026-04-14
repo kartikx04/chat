@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/kartikx04/chat/internal/controllers"
 	"github.com/kartikx04/chat/internal/database"
+	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
 	"github.com/kartikx04/chat/internal/ws"
 	"github.com/kartikx04/chat/pkg"
 )
@@ -21,7 +22,9 @@ func main() {
 
 	// Initialize DB
 	database.InitDB(config)
+	redisrepo.InitRedis()       // ← once here, sets the package global
+	redisrepo.CreateChatIndex() // ← also move this here if it's elsewhere
 
-	go controllers.StartHTTPServer()
-	ws.StartWebsocketServer()
+	go ws.StartWebsocketServer()
+	controllers.StartHTTPServer()
 }

@@ -13,6 +13,7 @@ type Chat struct {
 	Message       string    `gorm:"type:text;" json:"message"`
 	CreatedAt     time.Time `gorm:"autoCreateTime;" json:"created_at"`
 	CreatedAtUnix int64     `json:"created_at_unix"`
+	IsSelf        bool      `gorm:"-" json:"is_self"`
 }
 
 type Message struct {

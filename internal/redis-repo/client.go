@@ -12,13 +12,12 @@ import (
 var redisClient *redis.Client
 
 // Initialize Redis Connection
-func InitRedis() *redis.Client {
+func InitRedis() {
 	addr := fmt.Sprintf("%s:%s",
 		os.Getenv("REDIS_HOST"),
 		os.Getenv("REDIS_PORT"),
 	)
 
-	// server instance
 	conn := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: os.Getenv("REDIS_PASSWORD"),
@@ -29,7 +28,9 @@ func InitRedis() *redis.Client {
 	if err != nil {
 		log.Fatalf("❌ Failed to connect to Redis: %v", err)
 	}
-	log.Println("✅ Redis connection established")
 
-	return conn
+	redisClient = conn
+	log.Printf("✅ Redis client assigned: %p", redisClient) // should print a non-nil address
+	log.Println("✅ Redis connection established")
+	// ← no return value needed
 }
