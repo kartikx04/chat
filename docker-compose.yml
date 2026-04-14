@@ -6,6 +6,7 @@ services:
     container_name: chat_app
     ports:
       - "8080:8080"
+      - "8081:8081"
     env_file:
       - .env
     volumes:
@@ -17,7 +18,7 @@ services:
           condition: service_healthy
 
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack:latest
     container_name: chat_redis
     ports:
       - "6379:6379"

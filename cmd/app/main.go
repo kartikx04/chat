@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/kartikx04/chat/internal/controllers"
 	"github.com/kartikx04/chat/internal/database"
+	"github.com/kartikx04/chat/internal/ws"
 	"github.com/kartikx04/chat/pkg"
 )
 
@@ -21,5 +22,6 @@ func main() {
 	// Initialize DB
 	database.InitDB(config)
 
-	controllers.StartHTTPServer()
+	go controllers.StartHTTPServer()
+	ws.StartWebsocketServer()
 }

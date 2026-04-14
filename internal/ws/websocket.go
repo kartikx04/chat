@@ -71,7 +71,7 @@ func receiver(client *Client) {
 		} else {
 			fmt.Println("received message", m.Type, m.Chat)
 			c := m.Chat
-			c.CreatedAt = time.Now()
+			c.CreatedAt = time.Now().Unix()
 
 			// save in redis
 			id, err := redisrepo.CreateChat(&c)
@@ -143,10 +143,20 @@ func setupRoutes() {
 }
 
 func StartWebsocketServer() {
+	fmt.Println("Starting WebSocket server on :8081")
+
 	redisClient := redisrepo.InitRedis()
 	defer redisClient.Close()
 
+	fmt.Println("Redis initialized")
+
 	go broadcaster()
 	setupRoutes()
-	http.ListenAndServe(":8081", nil)
+
+	fmt.Println("Routes setup, listening...")
+
+	err := http.ListenAndServe(":8081", nil)
+	if err != nil {
+		log.Fatal("WebSocket server failed:", err)
+	}
 }

@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS chats (
     from_id UUID NOT NULL,
     to_id UUID NOT NULL,
     message TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at_unix BIGINT NOT NULL
 );
 
 -- Indexes for performance

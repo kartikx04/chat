@@ -24,7 +24,7 @@ func CreateChat(c *models.Chat) (uuid.UUID, error) {
 	res, err := redisClient.Do(
 		context.Background(),
 		"JSON.SET",
-		fmt.Sprint(chatKeyPrefix, chatId.String()),
+		ChatKey(chatId),
 		"$",
 		string(by),
 	).Result()
