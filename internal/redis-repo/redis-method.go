@@ -48,7 +48,7 @@ func CreateChatIndex() {
 		"SCHEMA",
 		"$.from_id", "AS", "from_id", "TAG",
 		"$.to_id", "AS", "to_id", "TAG",
-		"$.created_at", "AS", "created_at", "NUMERIC", "SORTABLE",
+		"$.created_at_unix", "AS", "created_at_unix", "NUMERIC", "SORTABLE",
 	).Result()
 	if err != nil && !strings.Contains(err.Error(), "Index already exists") {
 		log.Println(err)
@@ -58,14 +58,16 @@ func CreateChatIndex() {
 }
 
 func FetchChatBetween(id1, id2, fromTS, toTS string) ([]models.Chat, error) {
-	query := fmt.Sprintf("@from_id:{%s|%s} @to_id:{%s|%s} @created_at:[%s %s]",
-		id1, id2, id1, id2, fromTS, toTS)
+	query := fmt.Sprintf(
+		"@from_id:{%s|%s} @to_id:{%s|%s} @created_at_unix:[%s %s]",
+		id1, id2, id1, id2, fromTS, toTS,
+	)
 
 	res, err := redisClient.Do(context.Background(),
 		"FT.SEARCH",
 		ChatIndexKey(),
 		query,
-		"SORTBY", "created_at", "DESC",
+		"SORTBY", "created_at_unix", "DESC",
 		"LIMIT", "0", "50",
 	).Result()
 

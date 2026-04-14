@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,6 +27,7 @@ type Message struct {
 }
 
 var clients = make(map[*Client]bool)
+var mu sync.Mutex
 var broadcast = make(chan *models.Chat)
 
 // We'll need to define an Upgrader
@@ -55,7 +57,7 @@ func receiver(client *Client) {
 			return
 		}
 
-		m := &Message{}
+		m := &models.Message{}
 
 		err = json.Unmarshal(p, m)
 		if err != nil {
@@ -65,13 +67,21 @@ func receiver(client *Client) {
 
 		fmt.Println("host", client.Conn.RemoteAddr())
 		if m.Type == "bootup" {
-			// do mapping on bootup
 			client.Username = m.User
-			fmt.Println("client successfully mapped", &client, client, client.Username)
+
+			id, err := uuid.Parse(m.UserId)
+			if err != nil {
+				log.Println("invalid user id:", err)
+				return
+			}
+			client.Id = id
+
+			fmt.Println("client mapped:", client.Username, client.Id)
 		} else {
 			fmt.Println("received message", m.Type, m.Chat)
 			c := m.Chat
-			c.CreatedAt = time.Now().Unix()
+			c.CreatedAt = time.Now()
+			c.CreatedAtUnix = time.Now().Unix()
 
 			// save in redis
 			id, err := redisrepo.CreateChat(&c)
@@ -119,6 +129,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	client := &Client{Conn: ws}
@@ -128,7 +139,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 
 	// listen indefinitely for new messages coming
 	// through on our WebSocket connection
-	receiver(client)
+	go receiver(client)
 
 	fmt.Println("exiting", ws.RemoteAddr().String())
 	delete(clients, client)
