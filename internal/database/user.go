@@ -15,8 +15,8 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*models.User, error) {
-	user := &models.User{
+func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*models.Users, error) {
+	user := &models.Users{
 		AuthOId:  authOId,
 		Email:    email,
 		Username: username,
@@ -32,8 +32,8 @@ func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*
 	return user, nil
 }
 
-func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
-	var user models.User
+func (r *UserRepository) GetUserByEmail(email string) (*models.Users, error) {
+	var user models.Users
 
 	result := r.db.Where("email = ?", email).First(&user)
 
@@ -43,8 +43,8 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) GetUserByAuthOId(authOId string) (*models.User, error) {
-	var user models.User
+func (r *UserRepository) GetUserByAuthOId(authOId string) (*models.Users, error) {
+	var user models.Users
 
 	result := r.db.Where("auth_o_id = ?", authOId).First(&user)
 
@@ -54,8 +54,8 @@ func (r *UserRepository) GetUserByAuthOId(authOId string) (*models.User, error) 
 	return &user, nil
 }
 
-func (r *UserRepository) GetOrCreateUser(authID, email, username, picture string) (*models.User, error) {
-	var user models.User
+func (r *UserRepository) GetOrCreateUser(authID, email, username, picture string) (*models.Users, error) {
+	var user models.Users
 
 	err := r.db.Where("auth_o_id = ?", authID).First(&user).Error
 	if err == nil {
@@ -63,7 +63,7 @@ func (r *UserRepository) GetOrCreateUser(authID, email, username, picture string
 	}
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		user = models.User{
+		user = models.Users{
 			AuthOId:  authID,
 			Email:    email,
 			Username: username,

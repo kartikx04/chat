@@ -1,17 +1,19 @@
 package models
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
-type User struct {
+type Users struct {
 	Id        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	AuthOId   string    `gorm:"unique" json:"auth_o_id"`
 	Email     string    `gorm:"unique" json:"email"`
 	Username  string    `gorm:"unique" json:"username"`
 	Picture   string    `json:"picture"`
 	Role      string    `json:"role"`
-	CreatedAt int64     `gorm:"autoCreateTime" json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type OAuthData struct {
