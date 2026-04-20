@@ -17,8 +17,8 @@ func SessionKey(client string) string {
 }
 
 // Contact list
-func ContactListKey(username string) string {
-	return "contacts:" + username
+func ContactListKey(id uuid.UUID) string {
+	return "contacts:" + id.String()
 }
 
 // Chat keys
@@ -31,4 +31,9 @@ func ChatKey(id uuid.UUID) string {
 // ID generator
 func NewChatID() uuid.UUID {
 	return uuid.New()
+}
+
+// Contact keys
+func contactListZKey(id uuid.UUID) string {
+	return "contacts:" + id.String()
 }

@@ -22,3 +22,9 @@ type Message struct {
 	UserId string `json:"user_id,omitempty"`
 	Chat   Chat   `json:"chat,omitempty"`
 }
+
+type ContactList struct {
+	Id           uuid.UUID `json:"id"`
+	Username     string    `json:"username"`
+	LastActivity int64     `json:"last_activity"`
+}

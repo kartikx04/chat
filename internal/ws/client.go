@@ -77,6 +77,10 @@ func (c *Client) readPump() {
 				continue
 			}
 			c.Id = id
+
+			redisrepo.SetUsernameLookup(id, m.User)
+			redisrepo.SetIdLookup(m.User, id)
+
 			fmt.Println("client mapped:", c.Username, c.Id)
 			continue
 		}
