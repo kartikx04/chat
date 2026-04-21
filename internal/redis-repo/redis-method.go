@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/internal/models"
 	"github.com/redis/go-redis/v9"
 )
@@ -86,28 +87,23 @@ func FetchChatBetween(id1, id2, fromTS, toTS string) ([]models.Chat, error) {
 }
 
 func RegisterNewUser(username, password string) error {
-	// redis-cli
-	// SYNTAX: SET key value
-	// SET username password
-	// register new username:password key-value pair
 	err := redisClient.Set(context.Background(), username, password, 0).Err()
 	if err != nil {
-		log.Println("error while adding new user", err)
 		return err
 	}
 
-	// redis-cli
-	// SYNTAX: SADD key value
-	// SADD users username
 	err = redisClient.SAdd(context.Background(), UserSetKey(), username).Err()
 	if err != nil {
-		log.Println("error while adding user in set", err)
-		// redis-cli
-		// SYNTAX: DEL key
-		// DEL username
-		// drop the registered user
 		redisClient.Del(context.Background(), username)
+		return err
+	}
 
+	// ✅ ADD THIS: create and store the UUID lookups
+	id := uuid.New()
+	if err := SetIdLookup(username, id); err != nil {
+		return err
+	}
+	if err := SetUsernameLookup(id, username); err != nil {
 		return err
 	}
 
@@ -119,7 +115,11 @@ func IsUserExist(username string) bool {
 	// SYNTAX: SISMEMBER key value
 	// SISMEMBER users username
 
-	return redisClient.SIsMember(context.Background(), UserSetKey(), username).Val()
+	// return redisClient.SIsMember(context.Background(), UserSetKey(), username).Val()
+
+	var count int64
+	database.DB.Model(&models.Users{}).Where("username = ?", username).Count(&count)
+	return count > 0
 }
 
 func IsUserAuthentic(username, password string) error {

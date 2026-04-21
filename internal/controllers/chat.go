@@ -142,3 +142,34 @@ func contactList(id uuid.UUID) *response {
 	res.Total = len(contactList)
 	return res
 }
+
+func addContactHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id := r.URL.Query().Get("id")
+	contact := r.URL.Query().Get("contact")
+
+	if id == "" || contact == "" {
+		json.NewEncoder(w).Encode(response{Status: false, Message: "id and contact are required"})
+		return
+	}
+
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		json.NewEncoder(w).Encode(response{Status: false, Message: "invalid id"})
+		return
+	}
+
+	if !redisrepo.IsUserExist(contact) {
+		json.NewEncoder(w).Encode(response{Status: false, Message: "contact does not exist"})
+		return
+	}
+
+	err = redisrepo.UpdateContactList(uid, contact)
+	if err != nil {
+		json.NewEncoder(w).Encode(response{Status: false, Message: "failed to add contact"})
+		return
+	}
+
+	json.NewEncoder(w).Encode(response{Status: true, Message: "contact added"})
+}

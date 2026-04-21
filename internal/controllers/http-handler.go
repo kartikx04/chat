@@ -12,6 +12,15 @@ import (
 func StartHTTPServer() {
 	r := http.NewServeMux()
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(r)
+
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("ok")
 	})
@@ -21,7 +30,9 @@ func StartHTTPServer() {
 	r.HandleFunc("/", RenderPage)
 	r.HandleFunc("/home", Home)
 
-	handler := cors.Default().Handler(r)
+	r.HandleFunc("/contacts", contactListHandler)
+	r.HandleFunc("/chat-history", chatHistoryHandler)
+	r.HandleFunc("/add-contact", addContactHandler)
 
 	log.Printf("Server running on :%s\n", pkg.LoadFile("SERVER_PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", pkg.LoadFile("SERVER_PORT")), handler)

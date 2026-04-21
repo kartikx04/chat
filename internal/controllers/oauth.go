@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/goombaio/namegenerator"
@@ -101,7 +102,7 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	seed := time.Now().UTC().UnixNano()
 	name := namegenerator.NewNameGenerator(seed).Generate()
 
-	_, err = userRepo.GetOrCreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
+	user, err := userRepo.GetOrCreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
 	if err != nil {
 		log.Println("GetorCreateUser error:", err)
 		http.Error(res, err.Error(), 500)
@@ -117,7 +118,14 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	session.Save(req, res)
 
-	http.Redirect(res, req, "/home", http.StatusSeeOther)
+	redirectURL := fmt.Sprintf(
+		"http://localhost:3000/auth/callback?id=%s&username=%s&email=%s",
+		user.Id.String(),
+		url.QueryEscape(user.Username),
+		url.QueryEscape(authStruct.Email),
+	)
+	http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
+
 }
 
 func Logout(res http.ResponseWriter, req *http.Request) {
