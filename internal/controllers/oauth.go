@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -148,43 +147,4 @@ func Logout(res http.ResponseWriter, req *http.Request) {
 	})
 	http.Redirect(res, req, "/", http.StatusSeeOther)
 	fmt.Printf("user logged out successfully")
-}
-
-// RenderPage renders a simple HTML page to try out Google Sign-On
-func RenderPage(res http.ResponseWriter, req *http.Request) {
-	tmpl, err := template.ParseFiles("assets/index.html")
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = tmpl.Execute(res, nil)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-// Home renders a HTML page for logged in users
-func Home(res http.ResponseWriter, req *http.Request) {
-	session, _ := pkg.Store.Get(req, "userSession")
-
-	email, ok := session.Values["email"].(string)
-	if !ok {
-		http.Redirect(res, req, "/", http.StatusSeeOther)
-		return
-	}
-
-	picture, _ := session.Values["picture"].(string)
-
-	tmpl, err := template.ParseFiles("assets/home.html")
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	tmpl.Execute(res, map[string]string{
-		"Email":   email,
-		"Picture": picture,
-	})
 }
