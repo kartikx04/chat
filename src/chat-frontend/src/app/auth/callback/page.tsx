@@ -2,11 +2,12 @@
 
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
 
-export default function CallbackPage() {
+function CallbackHandler() {
   const router = useRouter()
   const params = useSearchParams()
   const { setUser } = useUser()
@@ -31,5 +32,17 @@ export default function CallbackPage() {
         <p className="text-sm text-muted-foreground">Signing you in...</p>
       </div>
     </div>
+  )
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    }>
+      <CallbackHandler />
+    </Suspense>
   )
 }
