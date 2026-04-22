@@ -30,7 +30,7 @@ func StartHTTPServer() {
 	})
 
 	r.HandleFunc("/google-sso", GoogleSignOn)
-	r.HandleFunc("/auth.google/callback", Callback)
+	r.HandleFunc("/auth/google/callback", Callback)
 
 	r.HandleFunc("/contacts", contactListHandler)
 	r.HandleFunc("/chat-history", chatHistoryHandler)
