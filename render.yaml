@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: chat-backend
+    runtime: go
+    buildCommand: go build -o main ./cmd/app
+    startCommand: ./main
+    envVars:
+      - key: DB_HOST
+        value: chat_postgres
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_USER
+        value: postgres
+      - key: DB_NAME
+        value: chat
+      - key: REDIS_HOST
+        value: chat_redis
+      - key: REDIS_PORT
+        value: "6379"
+      - key: SERVER_PORT
+        value: "8080"
+      - fromGroup: postgres
+      - fromGroup: redis
+
+  - type: pserv
+    name: chat_postgres
+    ipAllowList: []
+    plan: free
+    postgresVersion: "15"
+    envVars:
+      - key: POSTGRES_DB
+        value: chat
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  - type: pserv
+    name: chat_redis
+    ipAllowList: []
+    plan: free
+    redisVersion: "7"
+    envVars:
+      - key: REDIS_PASSWORD
+        generateValue: true

@@ -30,5 +30,12 @@ COPY --from=builder /app/internal/database/migrations ./internal/database/migrat
 
 EXPOSE 8080 8081
 
+# Add this before the CMD line
+RUN apk add --no-cache curl && \
+    curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate-linux-amd64.tar.gz | tar xvz && \
+    mv migrate /usr/local/bin/
+
+COPY --from=builder /app/internal/database/migrations ./internal/database/migrations
+
 # Run migrations first, then start app
 CMD ["sh", "-c", "migrate -path ./internal/database/migrations -database \"postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable\" up && ./main"]
