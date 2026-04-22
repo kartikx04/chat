@@ -134,7 +134,7 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		url.QueryEscape(user.Username),
 		url.QueryEscape(authStruct.Email),
 	)
-	http.Redirect(res, req, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(res, req, redirectURL, http.StatusFound)
 
 }
 
