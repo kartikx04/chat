@@ -25,6 +25,6 @@ func main() {
 	redisrepo.InitRedis()       // ← once here, sets the package global
 	redisrepo.CreateChatIndex() // ← also move this here if it's elsewhere
 
-	go ws.StartWebsocketServer()
+	ws.InitHub()
 	controllers.StartHTTPServer()
 }

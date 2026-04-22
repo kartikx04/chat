@@ -11,6 +11,13 @@ type Hub struct {
 	unregister chan *Client
 }
 
+var HubInstance *Hub
+
+func InitHub() {
+	HubInstance = NewHub()
+	go HubInstance.Run()
+}
+
 func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
