@@ -18,9 +18,17 @@ FROM alpine:latest
 
 WORKDIR /app
 
+RUN apk add --no-cache postgresql-client curl
+
+# Install migrate tool
+RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate-linux-amd64.tar.gz | tar xvz && \
+    mv migrate /usr/local/bin/
+
 COPY --from=builder /app/main .
 COPY --from=builder /app/assets ./assets
+COPY --from=builder /app/internal/database/migrations ./internal/database/migrations
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
-CMD ["./main"]
+# Run migrations first, then start app
+CMD ["sh", "-c", "migrate -path ./internal/database/migrations -database \"postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable\" up && ./main"]

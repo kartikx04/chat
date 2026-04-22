@@ -3,3 +3,4 @@ client_secret_841914283368-i4ip51kl8mg0pcks8a5ruunsvp27g30q.apps.googleuserconte
 personal.txt
 tmp/
 *.log
+.DS_Store
