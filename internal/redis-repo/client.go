@@ -13,24 +13,38 @@ var redisClient *redis.Client
 
 // Initialize Redis Connection
 func InitRedis() {
-	addr := fmt.Sprintf("%s:%s",
-		os.Getenv("REDIS_HOST"),
-		os.Getenv("REDIS_PORT"),
-	)
+	var client *redis.Client
+	var err error
 
-	conn := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: os.Getenv("REDIS_PASSWORD"),
-		DB:       0,
-	})
+	redisURL := os.Getenv("REDIS_URL")
 
-	_, err := conn.Ping(context.Background()).Result()
+	if redisURL != "" {
+		// ✅ Preferred: use full URL (Render internal connection)
+		opt, err := redis.ParseURL(redisURL)
+		if err != nil {
+			log.Fatalf("❌ Failed to parse Redis URL: %v", err)
+		}
+		client = redis.NewClient(opt)
+	} else {
+		// fallback (not recommended for Render)
+		addr := fmt.Sprintf("%s:%s",
+			os.Getenv("REDIS_HOST"),
+			os.Getenv("REDIS_PORT"),
+		)
+
+		client = redis.NewClient(&redis.Options{
+			Addr:     addr,
+			Password: os.Getenv("REDIS_PASSWORD"),
+			DB:       0,
+		})
+	}
+
+	// Test connection
+	_, err = client.Ping(context.Background()).Result()
 	if err != nil {
 		log.Fatalf("❌ Failed to connect to Redis: %v", err)
 	}
 
-	redisClient = conn
-	log.Printf("✅ Redis client assigned: %p", redisClient) // should print a non-nil address
+	redisClient = client
 	log.Println("✅ Redis connection established")
-	// ← no return value needed
 }
