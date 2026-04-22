@@ -19,7 +19,7 @@ export function useWebSocket({ user, onMessage }: UseWebSocketOptions) {
     if (!user) return
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081'
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://chat-0rnj.onrender.com'
     const ws = new WebSocket(`${wsUrl}/ws`)
     wsRef.current = ws
 

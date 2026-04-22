@@ -125,8 +125,11 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	log.Printf("OAuth Callback: user.Id=%s, user.Username=%s", user.Id.String(), user.Username)
 
+	frontendURL := pkg.LoadFile("FRONTEND_URL")
+
 	redirectURL := fmt.Sprintf(
-		"http://localhost:3000/auth/callback?id=%s&username=%s&email=%s",
+		"%s/auth/callback?id=%s&username=%s&email=%s",
+		frontendURL,
 		user.Id.String(),
 		url.QueryEscape(user.Username),
 		url.QueryEscape(authStruct.Email),
