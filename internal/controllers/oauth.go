@@ -12,6 +12,7 @@ import (
 	"github.com/goombaio/namegenerator"
 	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/internal/models"
+	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
 	"github.com/kartikx04/chat/pkg"
 
 	"golang.org/x/oauth2"
@@ -109,6 +110,10 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Set Redis lookup keys so frontend can resolve username <-> id
+	redisrepo.SetUsernameLookup(user.Id, user.Username)
+	redisrepo.SetIdLookup(user.Username, user.Id)
+
 	session, _ = pkg.Store.Get(req, "userSession")
 
 	session.Values = map[any]any{
@@ -117,6 +122,8 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	}
 
 	session.Save(req, res)
+
+	log.Printf("OAuth Callback: user.Id=%s, user.Username=%s", user.Id.String(), user.Username)
 
 	redirectURL := fmt.Sprintf(
 		"http://localhost:3000/auth/callback?id=%s&username=%s&email=%s",

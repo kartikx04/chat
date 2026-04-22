@@ -12,7 +12,7 @@ export const apiClient = {
 
   // Verify a contact exists before adding
   verifyContact: (username: string) =>
-    api.post<APIResponse>('/verify-contact', { username }),
+  api.get<APIResponse>(`/verify-contact?username=${encodeURIComponent(username)}`),
 
   // Add contact (bidirectional on backend)
   addContact: (id: string, contact: string) =>

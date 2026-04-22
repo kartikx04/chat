@@ -28,15 +28,17 @@ export default function HomePage() {
 
   // Load contacts on mount
   useEffect(() => {
-    if (!user) return
-    setContactsLoading(true)
-    apiClient.getContacts(user.id)
-      .then(res => {
-        if (res.data.data) setContacts(res.data.data)
-      })
-      .catch(console.error)
-      .finally(() => setContactsLoading(false))
-  }, [user])
+  if (!user) return
+  console.log('Fetching contacts for user:', user.id)
+  setContactsLoading(true)
+  apiClient.getContacts(user.id)
+    .then(res => {
+      console.log('getContacts result:', res.data)
+      if (res.data.data) setContacts(res.data.data)
+    })
+    .catch(err => console.error('getContacts error:', err))
+    .finally(() => setContactsLoading(false))
+}, [user])
 
   // Load chat history when contact is selected
   useEffect(() => {

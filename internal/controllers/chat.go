@@ -26,13 +26,22 @@ type response struct {
 func verifyContactHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	u := &userReq{}
-	if err := json.NewDecoder(r.Body).Decode(u); err != nil {
-		http.Error(w, "error decoidng request object", http.StatusBadRequest)
+	username := r.URL.Query().Get("username")
+	log.Printf("verifyContactHandler: username=%s", username)
+
+	if username == "" {
+		log.Printf("verifyContactHandler: username is empty")
+		json.NewEncoder(w).Encode(response{Status: false, Message: "username is required"})
 		return
 	}
 
-	res := verifyContact(u.Username)
+	exists := redisrepo.IsUserExist(username)
+	log.Printf("verifyContactHandler: IsUserExist returned %v for %s", exists, username)
+
+	res := response{Status: exists}
+	if !exists {
+		res.Message = "user not found"
+	}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -60,9 +69,22 @@ func chatHistoryHandler(w http.ResponseWriter, r *http.Request) {
 func contactListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	u := r.URL.Query().Get("id")
+	idStr := r.URL.Query().Get("id")
+	log.Printf("contactListHandler: id=%s", idStr)
 
-	res := contactList(uuid.NewSHA1(uuid.NameSpaceURL, []byte(u)))
+	if idStr == "" {
+		json.NewEncoder(w).Encode(response{Status: false, Message: "id is required"})
+		return
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		log.Printf("contactListHandler: invalid id format - %v", err)
+		json.NewEncoder(w).Encode(response{Status: false, Message: "invalid id"})
+		return
+	}
+
+	res := contactList(id)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -121,18 +143,21 @@ func contactList(id uuid.UUID) *response {
 
 	username, err := redisrepo.GetUsernameById(id)
 	if err != nil {
+		log.Printf("contactList: GetUsernameById error for %s: %v", id, err)
 		res.Message = "incorrect id"
 		return res
 	}
 
+	// check if user exists
 	if !redisrepo.IsUserExist(username) {
+		log.Printf("contactList: IsUserExist returned false for %s", username)
 		res.Message = "incorrect id"
 		return res
 	}
 
 	contactList, err := redisrepo.FetchContactList(id)
 	if err != nil {
-		log.Println("error in fetch contact list for id:", id, err)
+		log.Printf("contactList: FetchContactList error: %v", err)
 		res.Message = "unable to fetch contact list. please try again later."
 		return res
 	}
@@ -149,6 +174,8 @@ func addContactHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	contact := r.URL.Query().Get("contact")
 
+	log.Printf("addContactHandler: id=%s, contact=%s", id, contact)
+
 	if id == "" || contact == "" {
 		json.NewEncoder(w).Encode(response{Status: false, Message: "id and contact are required"})
 		return
@@ -156,20 +183,45 @@ func addContactHandler(w http.ResponseWriter, r *http.Request) {
 
 	uid, err := uuid.Parse(id)
 	if err != nil {
+		log.Printf("addContactHandler: invalid id - %v", err)
 		json.NewEncoder(w).Encode(response{Status: false, Message: "invalid id"})
 		return
 	}
 
+	// Verify contact username exists
 	if !redisrepo.IsUserExist(contact) {
+		log.Printf("addContactHandler: IsUserExist returned false for %s", contact)
 		json.NewEncoder(w).Encode(response{Status: false, Message: "contact does not exist"})
 		return
 	}
 
-	err = redisrepo.UpdateContactList(uid, contact)
+	log.Printf("addContactHandler: IsUserExist passed, resolving username to ID")
+
+	// Get contact's UUID from their username
+	contactId, err := redisrepo.GetIdByUsername(contact)
 	if err != nil {
+		log.Printf("addContactHandler: GetIdByUsername error for %s - %v", contact, err)
+		json.NewEncoder(w).Encode(response{Status: false, Message: "contact not found"})
+		return
+	}
+
+	log.Printf("addContactHandler: resolved %s to %s", contact, contactId.String())
+
+	// Add bidirectional
+	err = redisrepo.UpdateContactList(uid, contactId.String())
+	if err != nil {
+		log.Printf("addContactHandler: UpdateContactList error (1) - %v", err)
 		json.NewEncoder(w).Encode(response{Status: false, Message: "failed to add contact"})
 		return
 	}
 
+	err = redisrepo.UpdateContactList(contactId, uid.String())
+	if err != nil {
+		log.Printf("addContactHandler: UpdateContactList error (2) - %v", err)
+		json.NewEncoder(w).Encode(response{Status: false, Message: "failed to add contact"})
+		return
+	}
+
+	log.Printf("addContactHandler: success, added contact %s for user %s", contact, id)
 	json.NewEncoder(w).Encode(response{Status: true, Message: "contact added"})
 }

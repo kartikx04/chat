@@ -182,17 +182,31 @@ func FetchContactList(id uuid.UUID) ([]models.ContactList, error) {
 		Rev:   true,
 	}
 
-	// redis-cli
-	// SYNTAX: ZRANGE key from_index to_index REV WITHSCORES
-	// ZRANGE contacts:username 0 -1 REV WITHSCORES
 	res, err := redisClient.ZRangeArgsWithScores(context.Background(), zRangeArg).Result()
-
-	contactList := DeserialiseContactList(res)
-
 	if err != nil {
-		log.Println("error while fetching contact list. username: ",
-			contactList[1], err)
+		log.Println("error while fetching contact list:", err)
 		return nil, err
+	}
+
+	// res contains UUIDs as members, need to look up usernames
+	var contactList []models.ContactList
+	for _, z := range res {
+		contactId, err := uuid.Parse(z.Member.(string))
+		if err != nil {
+			continue
+		}
+
+		username, err := GetUsernameById(contactId)
+		if err != nil {
+			log.Printf("failed to get username for %s: %v", contactId, err)
+			continue
+		}
+
+		contactList = append(contactList, models.ContactList{
+			Id:           contactId,
+			Username:     username,
+			LastActivity: int64(z.Score),
+		})
 	}
 
 	return contactList, nil
@@ -223,9 +237,36 @@ func SetUsernameLookup(id uuid.UUID, username string) error {
 }
 
 func SetIdLookup(username string, id uuid.UUID) error {
-	return redisClient.Set(context.Background(),
-		fmt.Sprintf("username:%s", username),
-		id.String(),
-		0,
-	).Err()
+	if redisClient == nil {
+		log.Printf("ERROR: redisClient is nil!")
+		return fmt.Errorf("redis client not initialized")
+	}
+
+	key := fmt.Sprintf("username:%s", username)
+	val := id.String()
+
+	log.Printf("SetIdLookup: attempting to write %s = %s", key, val)
+
+	// Write
+	err := redisClient.Set(context.Background(), key, val, 0).Err()
+	if err != nil {
+		log.Printf("SetIdLookup Set ERROR: %v", err)
+		return err
+	}
+	log.Printf("SetIdLookup: Set() succeeded")
+
+	// Read back immediately
+	verify, err := redisClient.Get(context.Background(), key).Result()
+	if err != nil {
+		log.Printf("SetIdLookup Get ERROR: %v (key may not exist)", err)
+		return err
+	}
+
+	log.Printf("SetIdLookup: Verified write - %s = %s", key, verify)
+
+	// List all keys to see what exists
+	allKeys, _ := redisClient.Keys(context.Background(), "*").Result()
+	log.Printf("SetIdLookup: Total keys in Redis: %d, keys: %v", len(allKeys), allKeys)
+
+	return nil
 }

@@ -34,24 +34,30 @@ export function ContactSidebar({
     setAdding(true)
     setAddError('')
     try {
-      // Verify contact exists first
       const verify = await apiClient.verifyContact(searchVal.trim())
       if (!verify.data.status) {
         setAddError('User not found')
         return
       }
-      // Add contact
+      
       const res = await apiClient.addContact(user.id, searchVal.trim())
+      console.log('addContact response:', res.data)
       if (!res.data.status) {
         setAddError(res.data.message || 'Failed to add contact')
         return
       }
-      // Refresh contact list
+      
       const updated = await apiClient.getContacts(user.id)
-      if (updated.data.data) onContactsUpdate(updated.data.data)
+      console.log('getContacts response:', updated.data)
+      if (updated.data.data) {
+        console.log('Updating contacts with:', updated.data.data)
+        onContactsUpdate(updated.data.data)
+      }
+      
       setSearchVal('')
       setAddOpen(false)
-    } catch {
+    } catch (err) {
+      console.error('addContact error:', err)
       setAddError('Something went wrong')
     } finally {
       setAdding(false)

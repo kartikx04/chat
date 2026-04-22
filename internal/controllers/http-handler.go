@@ -33,6 +33,7 @@ func StartHTTPServer() {
 	r.HandleFunc("/contacts", contactListHandler)
 	r.HandleFunc("/chat-history", chatHistoryHandler)
 	r.HandleFunc("/add-contact", addContactHandler)
+	r.HandleFunc("/verify-contact", verifyContactHandler)
 
 	log.Printf("Server running on :%s\n", pkg.LoadFile("SERVER_PORT"))
 	http.ListenAndServe(fmt.Sprintf(":%s", pkg.LoadFile("SERVER_PORT")), handler)
