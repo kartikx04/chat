@@ -16,6 +16,7 @@ func StartHTTPServer() {
 		AllowedOrigins: []string{
 			"http://localhost:3000",
 			"https://chat-0rnj.onrender.com",
+			"https://banterrr.vercel.app",
 		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
@@ -29,7 +30,7 @@ func StartHTTPServer() {
 	})
 
 	r.HandleFunc("/google-sso", GoogleSignOn)
-	r.HandleFunc("/callback", Callback)
+	r.HandleFunc("/auth.google/callback", Callback)
 
 	r.HandleFunc("/contacts", contactListHandler)
 	r.HandleFunc("/chat-history", chatHistoryHandler)
