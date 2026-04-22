@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/kartikx04/chat/internal/models"
-	"github.com/kartikx04/chat/pkg"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -25,23 +24,23 @@ type Config struct {
 var DB *gorm.DB
 
 func InitDB(cfg Config) {
-
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		cfg.Host, cfg.User, cfg.Password, cfg.DBName, cfg.Port, cfg.SSLMode,
 	)
 
-	// Set log level based on ENV
-	logLevel := logger.Warn // default (clean)
+	// Default to Warn level
+	logLevel := logger.Warn
 
-	if pkg.LoadFile("ENV") == "development" {
-		logLevel = logger.Info // show SQL queries
+	// Check ENV after initialization
+	if os.Getenv("ENV") == "development" {
+		logLevel = logger.Info
 	}
 
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
-			SlowThreshold:             time.Second, // log slow queries
+			SlowThreshold:             time.Second,
 			LogLevel:                  logLevel,
 			IgnoreRecordNotFoundError: true,
 			Colorful:                  true,
@@ -58,8 +57,8 @@ func InitDB(cfg Config) {
 
 	DB = db
 
-	// ✅ migrate
-	err = DB.AutoMigrate(&models.Chat{})
+	// Migrate
+	err = DB.AutoMigrate(&models.Chat{}, &models.Users{})
 	if err != nil {
 		log.Fatal("migration failed:", err)
 	}
