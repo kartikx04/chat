@@ -1,12 +1,10 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
-
-// Your Go /callback endpoint should redirect to this page with user info
-// e.g. /auth/callback?id=<uuid>&username=<name>&email=<email>
-// Adjust the param names to match what your Go callback actually sends
 
 export default function CallbackPage() {
   const router = useRouter()
@@ -22,7 +20,6 @@ export default function CallbackPage() {
       setUser({ id, username, email })
       router.replace('/home')
     } else {
-      // No user info — go back to landing
       router.replace('/')
     }
   }, [params, router, setUser])
