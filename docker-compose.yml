@@ -2,23 +2,20 @@ version: '3.8'
 
 services:
   app:
-  build:
-    context: .
-    dockerfile: Dockerfile.prod
-  depends_on:
-    postgres:
-      condition: service_healthy
-    redis:
-      condition: service_healthy
-  environment:
-    DB_HOST: chat_postgres
-    DB_PORT: 5432
-    DB_USER: postgres
-    DB_PASSWORD: password
-    DB_NAME: chat
-    DB_SSLMODE: disable
-    REDIS_HOST: chat_redis
-    REDIS_PORT: 6379
+    build:
+      context: .
+      dockerfile: Dockerfile.dev  # ← use dev for local
+    container_name: chat_app
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   redis:
     image: redis/redis-stack:latest
