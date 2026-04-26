@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -106,7 +105,6 @@ func chatHistory(username1, username2, fromTS, toTS string) *response {
 	// if valid users fetch chats
 	res := &response{}
 
-	fmt.Println(username1, username2)
 	// check if user exists
 	if !redisrepo.IsUserExist(username1) || !redisrepo.IsUserExist(username2) {
 		res.Message = "incorrect username"

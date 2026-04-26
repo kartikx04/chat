@@ -2,18 +2,16 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/goombaio/namegenerator"
+	"github.com/kartikx04/chat/internal/auth"
 	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/internal/models"
 	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
 	"github.com/kartikx04/chat/pkg"
-
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -23,118 +21,122 @@ func init() {
 		RedirectURL:  pkg.LoadFile("REDIRECT_URL"),
 		ClientID:     pkg.LoadFile("CLIENT_ID"),
 		ClientSecret: pkg.LoadFile("CLIENT_SECRET"),
-		// scopes limits the access given to a token. this scope returns just the user info of the
-		// signed in email address
-		Scopes:   []string{"https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint: google.Endpoint, //Endpoint is Google's OAuth 2.0 default endpoint
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+		Endpoint:     google.Endpoint,
 	}
-
 }
 
-// Through GoogleSignOn, a URL is returned to the consent page created on Google Console. A security token string is provided which will be parsed and verified during redirect callback.
 func GoogleSignOn(res http.ResponseWriter, req *http.Request) {
 	tokenString, err := pkg.TokenString()
 	if err != nil {
-		fmt.Fprintf(res, "error: could not generate random token string: %v", err)
+		slog.ErrorContext(req.Context(), "failed to generate oauth state token", "error", err)
+		http.Error(res, "internal server error", http.StatusInternalServerError)
+		return
 	}
 
-	// creates a new session
 	session, err := pkg.Store.Get(req, "tokenSession")
 	if err != nil {
-		fmt.Fprintf(res, "error: %v", err)
+		slog.ErrorContext(req.Context(), "failed to get token session", "error", err)
+		http.Error(res, "internal server error", http.StatusInternalServerError)
+		return
 	}
 
-	// saves the generated token string into the created session; uses tokenStringKey as the key
 	session.Values["tokenStringKey"] = tokenString
 	session.Save(req, res)
 
-	// returns a URL with attached tokenString
-	url := pkg.OAuthgolang.AuthCodeURL(tokenString)
-	http.Redirect(res, req, url, http.StatusTemporaryRedirect)
+	authURL := pkg.OAuthgolang.AuthCodeURL(tokenString)
+	slog.InfoContext(req.Context(), "oauth redirect initiated")
+	http.Redirect(res, req, authURL, http.StatusTemporaryRedirect)
 }
 
-// Callback is triggered when Google Cloud Console redirects to /callback. Coupled with GetUserData
-// it verifies authorization request and unmarshals returned user data into our created OAuthData data structure
 func Callback(res http.ResponseWriter, req *http.Request) {
+	env := pkg.LoadFile("ENV")
 	state := req.FormValue("state")
 	code := req.FormValue("code")
 
-	// returns the created session
 	session, err := pkg.Store.Get(req, "tokenSession")
 	if err != nil {
-		fmt.Fprintf(res, "error: %v", err)
+		slog.ErrorContext(req.Context(), "failed to get token session", "error", err)
+		http.Error(res, "internal server error", http.StatusInternalServerError)
+		return
 	}
 
-	// returns the value of tokenStringKey
 	dataToken, ok := session.Values["tokenStringKey"].(string)
 	if !ok {
-		http.Error(res, "session expired or invalid", 400)
+		slog.WarnContext(req.Context(), "oauth callback: session expired or invalid")
+		http.Error(res, "session expired or invalid", http.StatusBadRequest)
 		return
 	}
 
 	data, err := pkg.GetUserData(state, code, dataToken)
 	if err != nil {
-		log.Println("GetUserData error:", err)
-		http.Error(res, err.Error(), 500)
+		slog.ErrorContext(req.Context(), "oauth get user data failed", "error", err)
+		http.Error(res, "authentication failed", http.StatusInternalServerError)
 		return
 	}
 
-	// the session cookie is deleted immediately
+	// Delete token session immediately after use
 	session.Options.MaxAge = -1
 	session.Save(req, res)
 
 	var authStruct models.OAuthData
-
-	// Google Cloud Console returns a JSON structure containing "id",,"email", "verified_email" and "picture"
-	// this converts the JSON structure into our created OAuthData structure
-	err = json.Unmarshal([]byte(data), &authStruct)
-	if err != nil {
-		fmt.Fprintf(res, "error: %v", err)
+	if err := json.Unmarshal([]byte(data), &authStruct); err != nil {
+		slog.ErrorContext(req.Context(), "failed to unmarshal oauth data", "error", err)
+		http.Error(res, "internal server error", http.StatusInternalServerError)
+		return
 	}
 
-	// if the email is valid then add the user information to cookie and save it.
 	if !authStruct.VerifiedEmail {
+		slog.WarnContext(req.Context(), "oauth callback: unverified email rejected", "email", authStruct.Email)
+		http.Error(res, "email not verified", http.StatusForbidden)
 		return
 	}
 
 	userRepo := database.NewUserRepository(database.DB)
-
 	seed := time.Now().UTC().UnixNano()
 	name := namegenerator.NewNameGenerator(seed).Generate()
 
 	user, err := userRepo.GetOrCreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
 	if err != nil {
-		log.Println("GetorCreateUser error:", err)
-		http.Error(res, err.Error(), 500)
+		slog.ErrorContext(req.Context(), "failed to get or create user", "error", err, "email", authStruct.Email)
+		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Set Redis lookup keys so frontend can resolve username <-> id
 	redisrepo.SetUsernameLookup(user.Id, user.Username)
 	redisrepo.SetIdLookup(user.Username, user.Id)
 
-	session, _ = pkg.Store.Get(req, "userSession")
-
-	session.Values = map[any]any{
+	userSession, _ := pkg.Store.Get(req, "userSession")
+	userSession.Values = map[any]any{
 		"email":   authStruct.Email,
 		"picture": authStruct.Picture,
 	}
+	userSession.Save(req, res)
 
-	session.Save(req, res)
+	slog.InfoContext(req.Context(), "oauth login success",
+		"user_id", user.Id.String(),
+		"username", user.Username,
+	)
 
-	log.Printf("OAuth Callback: user.Id=%s, user.Username=%s", user.Id.String(), user.Username)
+	token, err := auth.GenerateToken(user.Id.String(), user.Username, authStruct.Email)
+	if err != nil {
+		slog.ErrorContext(req.Context(), "failed to generate jwt", "error", err)
+		http.Error(res, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(res, &http.Cookie{
+		Name:     "session",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,                 // JS cannot read this — blocks XSS theft
+		Secure:   env != "development", // HTTPS only in production
+		SameSite: http.SameSiteLaxMode, // blocks CSRF
+		MaxAge:   7 * 24 * 60 * 60,     // 7 days in seconds
+	})
 
 	frontendURL := pkg.LoadFile("FRONTEND_URL")
-
-	redirectURL := fmt.Sprintf(
-		"%s/auth/callback?id=%s&username=%s&email=%s",
-		frontendURL,
-		user.Id.String(),
-		url.QueryEscape(user.Username),
-		url.QueryEscape(authStruct.Email),
-	)
-	http.Redirect(res, req, redirectURL, http.StatusFound)
-
+	http.Redirect(res, req, frontendURL+"/auth/callback", http.StatusFound)
 }
 
 func Logout(res http.ResponseWriter, req *http.Request) {
@@ -142,9 +144,32 @@ func Logout(res http.ResponseWriter, req *http.Request) {
 		Name:     "userSession",
 		Value:    "",
 		Path:     "/",
-		MaxAge:   -1, // Set MaxAge to -1 to delete the cookie
+		MaxAge:   -1,
 		HttpOnly: true,
 	})
+	slog.InfoContext(req.Context(), "user logged out")
 	http.Redirect(res, req, "/", http.StatusSeeOther)
-	fmt.Printf("user logged out successfully")
+}
+
+// internal/controllers/auth.go
+func Me(res http.ResponseWriter, req *http.Request) {
+	cookie, err := req.Cookie("session")
+	if err != nil {
+		http.Error(res, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := auth.ValidateToken(cookie.Value)
+	if err != nil {
+		slog.WarnContext(req.Context(), "invalid session token", "error", err)
+		http.Error(res, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(res).Encode(map[string]string{
+		"id":       claims.UserID,
+		"username": claims.Username,
+		"email":    claims.Email,
+	})
 }

@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/kartikx04/chat/internal/ws"
@@ -20,12 +20,15 @@ func StartHTTPServer() {
 			"https://banterrr.vercel.app",
 		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization", "Cookie"},
+		ExposedHeaders:   []string{"Set-Cookie"},
 		AllowCredentials: true,
 	})
 
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("ok")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		slog.InfoContext(r.Context(), "health check")
 	})
 
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -34,17 +37,20 @@ func StartHTTPServer() {
 
 	r.HandleFunc("/google-sso", GoogleSignOn)
 	r.HandleFunc("/auth/google/callback", Callback)
+	r.HandleFunc("/me", Me) // ← on r, not http — so CORS applies
 
 	r.HandleFunc("/contacts", contactListHandler)
 	r.HandleFunc("/chat-history", chatHistoryHandler)
 	r.HandleFunc("/add-contact", addContactHandler)
 	r.HandleFunc("/verify-contact", verifyContactHandler)
 
-	log.Printf("Server running on :%s\n", pkg.LoadFile("SERVER_PORT"))
-	http.ListenAndServe(fmt.Sprintf(":%s", pkg.LoadFile("SERVER_PORT")),
+	port := pkg.LoadFile("SERVER_PORT")
+	slog.Info("server running", "port", port)
+
+	http.ListenAndServe(fmt.Sprintf(":%s", port),
 		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if req.URL.Path == "/ws" {
-				r.ServeHTTP(w, req) // 🚀 bypass CORS
+				r.ServeHTTP(w, req)
 				return
 			}
 			c.Handler(r).ServeHTTP(w, req)

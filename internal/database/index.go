@@ -2,14 +2,13 @@ package database
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
-	"time"
 
+	applogger "github.com/kartikx04/chat/internal/logger"
 	"github.com/kartikx04/chat/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type Config struct {
@@ -29,39 +28,22 @@ func InitDB(cfg Config) {
 		cfg.Host, cfg.User, cfg.Password, cfg.DBName, cfg.Port, cfg.SSLMode,
 	)
 
-	// Default to Warn level
-	logLevel := logger.Warn
-
-	// Check ENV after initialization
-	if os.Getenv("ENV") == "development" {
-		logLevel = logger.Info
-	}
-
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold:             time.Second,
-			LogLevel:                  logLevel,
-			IgnoreRecordNotFoundError: true,
-			Colorful:                  true,
-		},
-	)
+	env := os.Getenv("ENV")
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: newLogger,
+		Logger: applogger.NewSlogGormLogger(env),
 	})
-
 	if err != nil {
-		log.Fatal("db initialize error:", err)
+		slog.Error("db initialize error", "error", err)
+		os.Exit(1)
 	}
 
 	DB = db
 
-	// Migrate
-	err = DB.AutoMigrate(&models.Chat{}, &models.Users{})
-	if err != nil {
-		log.Fatal("migration failed:", err)
+	if err = DB.AutoMigrate(&models.Chat{}, &models.Users{}); err != nil {
+		slog.Error("migration failed", "error", err)
+		os.Exit(1)
 	}
 
-	fmt.Println("✅ Database connected")
+	slog.Info("database connected", "host", cfg.Host, "name", cfg.DBName)
 }

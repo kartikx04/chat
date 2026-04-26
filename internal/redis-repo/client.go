@@ -3,7 +3,7 @@ package redisrepo
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -11,27 +11,23 @@ import (
 
 var redisClient *redis.Client
 
-// Initialize Redis Connection
 func InitRedis() {
 	var client *redis.Client
-	var err error
 
 	redisURL := os.Getenv("REDIS_URL")
 
 	if redisURL != "" {
-		// ✅ Preferred: use full URL (Render internal connection)
 		opt, err := redis.ParseURL(redisURL)
 		if err != nil {
-			log.Fatalf("❌ Failed to parse Redis URL: %v", err)
+			slog.Error("failed to parse redis url", "error", err)
+			os.Exit(1)
 		}
 		client = redis.NewClient(opt)
 	} else {
-		// fallback (not recommended for Render)
 		addr := fmt.Sprintf("%s:%s",
 			os.Getenv("REDIS_HOST"),
 			os.Getenv("REDIS_PORT"),
 		)
-
 		client = redis.NewClient(&redis.Options{
 			Addr:     addr,
 			Password: os.Getenv("REDIS_PASSWORD"),
@@ -39,12 +35,19 @@ func InitRedis() {
 		})
 	}
 
-	// Test connection
-	_, err = client.Ping(context.Background()).Result()
-	if err != nil {
-		log.Fatalf("❌ Failed to connect to Redis: %v", err)
+	if _, err := client.Ping(context.Background()).Result(); err != nil {
+		slog.Error("redis connection failed", "error", err)
+		os.Exit(1)
 	}
 
 	redisClient = client
-	log.Println("✅ Redis connection established")
+	slog.Info("redis connected",
+		"host", os.Getenv("REDIS_HOST"),
+		"port", os.Getenv("REDIS_PORT"),
+	)
+}
+
+func Close() error {
+	slog.Info("redis closing connection")
+	return redisClient.Close()
 }

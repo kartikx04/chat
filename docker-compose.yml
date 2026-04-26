@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   app:
+    environment:
+      - TERM=xterm-256color
+    tty: true 
     build:
       context: .
       dockerfile: Dockerfile.dev  # ← use dev for local
@@ -11,6 +14,9 @@ services:
       - "8081:8081"
     env_file:
       - .env
+    volumes:
+      - .:/app
+      - /app/tmp
     depends_on:
       postgres:
         condition: service_healthy

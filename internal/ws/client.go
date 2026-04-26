@@ -2,8 +2,7 @@ package ws
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -26,7 +25,7 @@ type Client struct {
 	Conn     *websocket.Conn
 	Username string
 	Id       uuid.UUID
-	send     chan *models.Chat // buffered — writePump is the ONLY writer to Conn
+	send     chan *models.Chat
 }
 
 var upgrader = websocket.Upgrader{
@@ -35,12 +34,11 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-// readPump — one goroutine, reads from WebSocket, writes to hub.broadcast.
-// It is the ONLY goroutine that calls Conn.ReadMessage.
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		c.Conn.Close()
+		slog.Debug("ws read pump closed", "username", c.Username)
 	}()
 
 	c.Conn.SetReadLimit(maxMessageSize)
@@ -53,19 +51,18 @@ func (c *Client) readPump() {
 	for {
 		_, p, err := c.Conn.ReadMessage()
 		if err != nil {
-			// Both expected (1000/1001) and unexpected closes exit cleanly here
 			if websocket.IsUnexpectedCloseError(err,
 				websocket.CloseGoingAway,
 				websocket.CloseNormalClosure,
 			) {
-				log.Println("unexpected close:", err)
+				slog.Warn("ws unexpected close", "username", c.Username, "error", err)
 			}
-			return // always return on any read error
+			return
 		}
 
 		m := &models.Message{}
 		if err := json.Unmarshal(p, m); err != nil {
-			log.Println("unmarshal error:", err)
+			slog.Warn("ws unmarshal error", "username", c.Username, "error", err)
 			continue
 		}
 
@@ -73,22 +70,20 @@ func (c *Client) readPump() {
 			c.Username = m.User
 			id, err := uuid.Parse(m.UserId)
 			if err != nil {
-				log.Println("invalid user id:", err)
+				slog.Warn("ws invalid user id", "raw", m.UserId, "error", err)
 				continue
 			}
 			c.Id = id
-
 			redisrepo.SetUsernameLookup(id, m.User)
 			redisrepo.SetIdLookup(m.User, id)
-
-			fmt.Println("client mapped:", c.Username, c.Id)
+			slog.Info("ws client mapped", "username", c.Username, "user_id", c.Id)
 			continue
 		}
 
 		if m.Type == "message" {
 			chat := m.Chat
 			if chat.FromId == uuid.Nil || chat.ToId == uuid.Nil || chat.Message == "" {
-				log.Println("invalid message payload")
+				slog.Warn("ws invalid message payload", "username", c.Username)
 				continue
 			}
 
@@ -96,7 +91,6 @@ func (c *Client) readPump() {
 			chat.CreatedAt = now
 			chat.CreatedAtUnix = now.Unix()
 
-			// Save to Postgres
 			if err := database.DB.Create(&models.Chat{
 				FromId:        chat.FromId,
 				ToId:          chat.ToId,
@@ -104,26 +98,36 @@ func (c *Client) readPump() {
 				CreatedAt:     now,
 				CreatedAtUnix: chat.CreatedAtUnix,
 			}).Error; err != nil {
-				log.Println("DB save error:", err)
+				slog.Error("ws db save failed",
+					"from", chat.FromId,
+					"to", chat.ToId,
+					"error", err,
+				)
 				continue
 			}
 
-			// Save to Redis
 			id, err := redisrepo.CreateChat(&chat)
 			if err != nil {
-				log.Println("Redis save error:", err)
+				slog.Error("ws redis save failed",
+					"from", chat.FromId,
+					"to", chat.ToId,
+					"error", err,
+				)
 				continue
 			}
 			chat.Id = id
 
-			// Send to hub — non-blocking because hub.broadcast is buffered (256)
+			slog.Debug("ws message saved and broadcasting",
+				"from", chat.FromId,
+				"to", chat.ToId,
+				"chat_id", chat.Id,
+			)
+
 			c.hub.broadcast <- &chat
 		}
 	}
 }
 
-// writePump — one goroutine, the ONLY writer to Conn for this client.
-// Gorilla WebSocket connections are NOT safe for concurrent writes.
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -136,18 +140,18 @@ func (c *Client) writePump() {
 		case message, ok := <-c.send:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// hub closed the channel — send close frame and exit
 				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 			if err := c.Conn.WriteJSON(message); err != nil {
-				log.Println("write error:", err)
+				slog.Warn("ws write error", "username", c.Username, "error", err)
 				return
 			}
 
 		case <-ticker.C:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				slog.Debug("ws ping failed, closing", "username", c.Username)
 				return
 			}
 		}
@@ -157,19 +161,19 @@ func (c *Client) writePump() {
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("upgrade error:", err)
+		slog.Error("ws upgrade failed", "error", err, "remote", r.RemoteAddr)
 		return
 	}
+
+	slog.Debug("ws connection upgraded", "remote", r.RemoteAddr)
 
 	client := &Client{
 		hub:  hub,
 		Conn: conn,
-		send: make(chan *models.Chat, 256), // buffered — never blocks hub.Run()
+		send: make(chan *models.Chat, 256),
 	}
 
 	hub.register <- client
-
-	// Each client gets exactly two goroutines — one reads, one writes.
 	go client.writePump()
 	go client.readPump()
 }
