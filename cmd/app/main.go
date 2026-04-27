@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,23 +39,42 @@ func main() {
 	redisrepo.CreateChatIndex()
 	ws.InitHub()
 
-	// Run server in goroutine so it doesn't block signal handling
-	go controllers.StartHTTPServer()
+	server := controllers.NewHTTPServer()
 
-	// Block until SIGINT or SIGTERM
+	// Start server in background
+	go func() {
+		slog.Info("server running", "addr", server.Addr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
-
 	slog.Info("shutdown signal received", "signal", sig.String())
 
+	// 10 seconds for in-flight HTTP requests to finish
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Step 1 — stop accepting new HTTP requests, drain existing ones
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("http server shutdown error", "error", err)
+	}
+	slog.Info("http server stopped")
+
+	// Step 2 — close all WebSocket connections
+	ws.HubInstance.Shutdown()
+	slog.Info("websocket hub stopped")
+
+	// Step 3 — close Redis
 	if err := redisrepo.Close(); err != nil {
 		slog.Error("redis close error", "error", err)
 	}
+	slog.Info("redis closed")
 
-	<-ctx.Done()
-	slog.Info("server stopped")
+	slog.Info("server stopped cleanly")
 }

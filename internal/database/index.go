@@ -26,6 +26,7 @@ type Config struct {
 }
 
 var DB *gorm.DB
+var PingRedis func() error
 
 func InitDB(cfg Config) {
 	dsn := fmt.Sprintf(

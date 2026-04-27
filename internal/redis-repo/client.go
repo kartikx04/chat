@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/kartikx04/chat/internal/database"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -41,6 +42,11 @@ func InitRedis() {
 	}
 
 	redisClient = client
+
+	database.PingRedis = func() error {
+		return redisClient.Ping(context.Background()).Err()
+	}
+
 	slog.Info("redis connected",
 		"host", os.Getenv("REDIS_HOST"),
 		"port", os.Getenv("REDIS_PORT"),

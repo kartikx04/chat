@@ -11,7 +11,7 @@ import (
 	"github.com/rs/cors"
 )
 
-func StartHTTPServer() {
+func NewHTTPServer() *http.Server {
 	r := http.NewServeMux()
 
 	c := cors.New(cors.Options{
@@ -26,15 +26,25 @@ func StartHTTPServer() {
 		AllowCredentials: true,
 	})
 
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
+		// Check DB
 		sqlDB, err := database.DB.DB()
 		if err != nil || sqlDB.Ping() != nil {
-			slog.ErrorContext(r.Context(), "health check: db unreachable")
-			http.Error(w, "db unavailable", http.StatusServiceUnavailable)
+			slog.ErrorContext(req.Context(), "health: db unreachable")
+			http.Error(w, `{"status":"error","db":false}`, http.StatusServiceUnavailable)
 			return
 		}
+
+		// Check Redis
+		if err := database.PingRedis(); err != nil {
+			slog.ErrorContext(req.Context(), "health: redis unreachable", "error", err)
+			http.Error(w, `{"status":"error","redis":false}`, http.StatusServiceUnavailable)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		w.Write([]byte(`{"status":"ok","db":true,"redis":true}`))
 	})
 
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -43,23 +53,24 @@ func StartHTTPServer() {
 
 	r.HandleFunc("/google-sso", GoogleSignOn)
 	r.HandleFunc("/auth/google/callback", Callback)
-	r.HandleFunc("/me", Me) // ← on r, not http — so CORS applies
-
+	r.HandleFunc("/me", Me)
 	r.HandleFunc("/contacts", contactListHandler)
 	r.HandleFunc("/chat-history", chatHistoryHandler)
 	r.HandleFunc("/add-contact", addContactHandler)
 	r.HandleFunc("/verify-contact", verifyContactHandler)
 
 	port := pkg.LoadFile("SERVER_PORT")
-	slog.Info("server running", "port", port)
 
-	http.ListenAndServe(fmt.Sprintf(":%s", port),
-		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if req.URL.Path == "/ws" {
-				r.ServeHTTP(w, req)
-				return
-			}
-			c.Handler(r).ServeHTTP(w, req)
-		}),
-	)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/ws" {
+			r.ServeHTTP(w, req)
+			return
+		}
+		c.Handler(r).ServeHTTP(w, req)
+	})
+
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: handler,
+	}
 }

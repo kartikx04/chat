@@ -13,6 +13,10 @@ Real-time chat application built with Go, Next.js, PostgreSQL, and Redis.
 
 ---
 
+## Live
+
+**Link** -  https://banterrr.vercel.app
+
 ## Environment Variables
 
 Create a `.env` file in the project root:
