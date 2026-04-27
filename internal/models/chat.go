@@ -20,6 +20,7 @@ type Message struct {
 	Type   string `json:"type"`
 	User   string `json:"user,omitempty"`
 	UserId string `json:"user_id,omitempty"`
+	To     string `json:"to,omitempty"`
 	Chat   Chat   `json:"chat,omitempty"`
 }
 

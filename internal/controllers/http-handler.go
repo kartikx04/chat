@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/internal/ws"
 	"github.com/kartikx04/chat/pkg"
 	"github.com/rs/cors"
@@ -26,9 +27,14 @@ func StartHTTPServer() {
 	})
 
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		sqlDB, err := database.DB.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			slog.ErrorContext(r.Context(), "health check: db unreachable")
+			http.Error(w, "db unavailable", http.StatusServiceUnavailable)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
-		slog.InfoContext(r.Context(), "health check")
 	})
 
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
