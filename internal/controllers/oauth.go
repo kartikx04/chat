@@ -118,7 +118,7 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		"username", user.Username,
 	)
 
-	_, err = auth.GenerateToken(user.Id.String(), user.Username, authStruct.Email)
+	token, err := auth.GenerateToken(user.Id.String(), user.Username, authStruct.Email)
 	if err != nil {
 		slog.ErrorContext(req.Context(), "failed to generate jwt", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
@@ -126,7 +126,7 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 	}
 
 	frontendURL := pkg.LoadFile("FRONTEND_URL")
-	http.Redirect(res, req, frontendURL+"/auth/callback", http.StatusFound)
+	http.Redirect(res, req, frontendURL+"/auth/callback?token="+token, http.StatusFound)
 }
 
 func Logout(res http.ResponseWriter, req *http.Request) {
