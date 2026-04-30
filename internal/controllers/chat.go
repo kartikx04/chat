@@ -3,9 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/kartikx04/chat/internal/database"
+	"github.com/kartikx04/chat/internal/models"
 	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
 )
 
@@ -45,24 +48,68 @@ func verifyContactHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func chatHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	userId := r.URL.Query().Get("id")
+	contactId := r.URL.Query().Get("contact")
 
-	// user1 user2
-	u1 := r.URL.Query().Get("u1")
-	u2 := r.URL.Query().Get("u2")
+	if userId == "" || contactId == "" {
+		slog.WarnContext(r.Context(), "chat-history: missing params",
+			"id", userId, "contact", contactId,
+		)
+		http.Error(w, "missing id or contact", http.StatusBadRequest)
+		return
+	}
 
-	// chat between timerange fromTS toTS
-	// where TS is timestamp
-	// 0 to positive infinity
-	fromTS, toTS := "0", "+inf"
-
+	fromTS := "0"
+	toTS := "+inf"
 	if r.URL.Query().Get("from-ts") != "" && r.URL.Query().Get("to-ts") != "" {
 		fromTS = r.URL.Query().Get("from-ts")
 		toTS = r.URL.Query().Get("to-ts")
 	}
 
-	res := chatHistory(u1, u2, fromTS, toTS)
-	json.NewEncoder(w).Encode(res)
+	// Try Redis first
+	chats, err := redisrepo.FetchChatBetween(userId, contactId, fromTS, toTS)
+	if err != nil || len(chats) == 0 {
+		slog.DebugContext(r.Context(), "chat-history: redis miss, trying postgres",
+			"user", userId, "contact", contactId,
+		)
+		chats, err = fetchChatsFromDB(userId, contactId, 50)
+		if err != nil {
+			slog.ErrorContext(r.Context(), "chat-history: db fetch failed",
+				"error", err,
+				"user", userId,
+				"contact", contactId,
+			)
+			http.Error(w, "failed to fetch history", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Tag which messages belong to the requesting user
+	for i := range chats {
+		chats[i].IsSelf = chats[i].FromId.String() == userId
+	}
+
+	slog.DebugContext(r.Context(), "chat-history: returning messages",
+		"count", len(chats),
+		"user", userId,
+		"contact", contactId,
+	)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(chats)
+}
+
+func fetchChatsFromDB(userId, contactId string, limit int) ([]models.Chat, error) {
+	var chats []models.Chat
+	err := database.DB.
+		Where(
+			"(from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)",
+			userId, contactId, contactId, userId,
+		).
+		Order("created_at_unix ASC").
+		Limit(limit).
+		Find(&chats).Error
+	return chats, err
 }
 
 func contactListHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,41 +145,6 @@ func verifyContact(username string) *response {
 		res.Message = "invalid username"
 	}
 
-	return res
-}
-func chatHistory(username1, username2, fromTS, toTS string) *response {
-	// if invalid usernames return error
-	// if valid users fetch chats
-	res := &response{}
-
-	// check if user exists
-	if !redisrepo.IsUserExist(username1) || !redisrepo.IsUserExist(username2) {
-		res.Message = "incorrect username"
-		return res
-	}
-
-	id1, err := redisrepo.GetIdByUsername(username1)
-	if err != nil {
-		res.Message = "could not resolve user1"
-		return res
-	}
-
-	id2, err := redisrepo.GetIdByUsername(username2)
-	if err != nil {
-		res.Message = "could not resolve user2"
-		return res
-	}
-
-	chats, err := redisrepo.FetchChatBetween(id1.String(), id2.String(), fromTS, toTS)
-	if err != nil {
-		log.Println("error in fetch chat between", err)
-		res.Message = "unable to fetch chat history. please try again later."
-		return res
-	}
-
-	res.Status = true
-	res.Data = chats
-	res.Total = len(chats)
 	return res
 }
 
