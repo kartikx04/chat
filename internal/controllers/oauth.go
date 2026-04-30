@@ -129,10 +129,10 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		Name:     "session",
 		Value:    token,
 		Path:     "/",
-		HttpOnly: true,                 // JS cannot read this — blocks XSS theft
-		Secure:   env != "development", // HTTPS only in production
-		SameSite: http.SameSiteLaxMode, // blocks CSRF
-		MaxAge:   7 * 24 * 60 * 60,     // 7 days in seconds
+		HttpOnly: true,                  // JS cannot read this — blocks XSS theft
+		Secure:   env != "development",  // HTTPS only in production
+		SameSite: http.SameSiteNoneMode, // blocks CSRF
+		MaxAge:   7 * 24 * 60 * 60,      // 7 days in seconds
 	})
 
 	frontendURL := pkg.LoadFile("FRONTEND_URL")
