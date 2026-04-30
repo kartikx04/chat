@@ -153,6 +153,9 @@ func Logout(res http.ResponseWriter, req *http.Request) {
 
 // internal/controllers/auth.go
 func Me(res http.ResponseWriter, req *http.Request) {
+	// Temporary — remove after debugging
+	slog.Info("me: all cookies", "cookies", req.Header.Get("Cookie"))
+
 	cookie, err := req.Cookie("session")
 	if err != nil {
 		http.Error(res, "unauthorized", http.StatusUnauthorized)
