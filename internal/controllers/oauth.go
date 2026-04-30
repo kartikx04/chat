@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/goombaio/namegenerator"
@@ -50,7 +51,6 @@ func GoogleSignOn(res http.ResponseWriter, req *http.Request) {
 }
 
 func Callback(res http.ResponseWriter, req *http.Request) {
-	env := pkg.LoadFile("ENV")
 	state := req.FormValue("state")
 	code := req.FormValue("code")
 
@@ -118,22 +118,12 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		"username", user.Username,
 	)
 
-	token, err := auth.GenerateToken(user.Id.String(), user.Username, authStruct.Email)
+	_, err = auth.GenerateToken(user.Id.String(), user.Username, authStruct.Email)
 	if err != nil {
 		slog.ErrorContext(req.Context(), "failed to generate jwt", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
-
-	http.SetCookie(res, &http.Cookie{
-		Name:     "session",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,                  // JS cannot read this — blocks XSS theft
-		Secure:   env != "development",  // HTTPS only in production
-		SameSite: http.SameSiteNoneMode, // blocks CSRF
-		MaxAge:   7 * 24 * 60 * 60,      // 7 days in seconds
-	})
 
 	frontendURL := pkg.LoadFile("FRONTEND_URL")
 	http.Redirect(res, req, frontendURL+"/auth/callback", http.StatusFound)
@@ -153,21 +143,25 @@ func Logout(res http.ResponseWriter, req *http.Request) {
 
 // internal/controllers/auth.go
 func Me(res http.ResponseWriter, req *http.Request) {
-	// Temporary — remove after debugging
-	slog.Info("me: all cookies", "cookies", req.Header.Get("Cookie"))
-
-	cookie, err := req.Cookie("session")
-	if err != nil {
+	authHeader := req.Header.Get("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		slog.WarnContext(req.Context(), "me: no auth header")
 		http.Error(res, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	claims, err := auth.ValidateToken(cookie.Value)
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	claims, err := auth.ValidateToken(tokenStr)
 	if err != nil {
-		slog.WarnContext(req.Context(), "invalid session token", "error", err)
+		slog.WarnContext(req.Context(), "me: invalid token", "error", err)
 		http.Error(res, "unauthorized", http.StatusUnauthorized)
 		return
 	}
+
+	slog.DebugContext(req.Context(), "me: identity resolved",
+		"user_id", claims.UserID,
+		"username", claims.Username,
+	)
 
 	res.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(res).Encode(map[string]string{
