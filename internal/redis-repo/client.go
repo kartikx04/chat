@@ -2,11 +2,13 @@ package redisrepo
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/kartikx04/chat/internal/database"
+	"github.com/kartikx04/chat/pkg"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -26,13 +28,15 @@ func InitRedis() {
 		client = redis.NewClient(opt)
 	} else {
 		addr := fmt.Sprintf("%s:%s",
-			os.Getenv("REDIS_HOST"),
-			os.Getenv("REDIS_PORT"),
+			pkg.LoadFile("REDIS_HOST"),
+			pkg.LoadFile("REDIS_PORT"),
 		)
 		client = redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: os.Getenv("REDIS_PASSWORD"),
-			DB:       0,
+			Addr:      addr,
+			Username:  pkg.LoadFile("REDIS_USER"),
+			Password:  pkg.LoadFile("REDIS_PASSWORD"),
+			DB:        0,
+			TLSConfig: &tls.Config{},
 		})
 	}
 
