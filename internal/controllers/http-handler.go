@@ -35,16 +35,8 @@ func NewHTTPServer() *http.Server {
 			return
 		}
 
-		// Check Redis
-		if err := database.PingRedis(); err != nil {
-			slog.ErrorContext(req.Context(), "health: redis unreachable", "error", err)
-			http.Error(w, `{"status":"error","redis":false}`, http.StatusServiceUnavailable)
-			return
-		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok","db":true,"redis":true}`))
 	})
 
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -54,10 +46,6 @@ func NewHTTPServer() *http.Server {
 	r.HandleFunc("/google-sso", GoogleSignOn)
 	r.HandleFunc("/auth/google/callback", Callback)
 	r.HandleFunc("/me", Me)
-	r.HandleFunc("/contacts", contactListHandler)
-	r.HandleFunc("/chat-history", chatHistoryHandler)
-	r.HandleFunc("/add-contact", addContactHandler)
-	r.HandleFunc("/verify-contact", verifyContactHandler)
 
 	port := pkg.LoadFile("SERVER_PORT")
 

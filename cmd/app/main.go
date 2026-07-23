@@ -12,7 +12,6 @@ import (
 	"github.com/kartikx04/chat/internal/controllers"
 	"github.com/kartikx04/chat/internal/database"
 	applogger "github.com/kartikx04/chat/internal/logger"
-	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
 	"github.com/kartikx04/chat/internal/ws"
 	"github.com/kartikx04/chat/pkg"
 )
@@ -35,8 +34,6 @@ func main() {
 	}
 
 	database.InitDB(config)
-	redisrepo.InitRedis()
-	redisrepo.CreateChatIndex()
 	ws.InitHub()
 
 	server := controllers.NewHTTPServer()
@@ -69,12 +66,6 @@ func main() {
 	// Step 2 — close all WebSocket connections
 	ws.HubInstance.Shutdown()
 	slog.Info("websocket hub stopped")
-
-	// Step 3 — close Redis
-	if err := redisrepo.Close(); err != nil {
-		slog.Error("redis close error", "error", err)
-	}
-	slog.Info("redis closed")
 
 	slog.Info("server stopped cleanly")
 }

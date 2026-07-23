@@ -11,7 +11,6 @@ import (
 	"github.com/kartikx04/chat/internal/auth"
 	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/internal/models"
-	redisrepo "github.com/kartikx04/chat/internal/redis-repo"
 	"github.com/kartikx04/chat/pkg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -102,10 +101,6 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
-
-	redisrepo.SetUsernameLookup(user.Id, user.Username)
-	redisrepo.SetIdLookup(user.Username, user.Id)
-
 	userSession, _ := pkg.Store.Get(req, "userSession")
 	userSession.Values = map[any]any{
 		"email":   authStruct.Email,
