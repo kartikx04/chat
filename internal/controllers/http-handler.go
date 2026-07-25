@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/kartikx04/chat/internal/database"
-	"github.com/kartikx04/chat/internal/ws"
 	"github.com/kartikx04/chat/pkg"
 	"github.com/rs/cors"
 )
@@ -26,39 +25,32 @@ func NewHTTPServer() *http.Server {
 		AllowCredentials: true,
 	})
 
-	r.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
-		// Check DB
-		sqlDB, err := database.DB.DB()
-		if err != nil || sqlDB.Ping() != nil {
-			slog.ErrorContext(req.Context(), "health: db unreachable")
-			http.Error(w, `{"status":"error","db":false}`, http.StatusServiceUnavailable)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-	})
-
-	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		ws.ServeWs(ws.HubInstance, w, r)
-	})
+	r.HandleFunc("/health", Health)
 
 	r.HandleFunc("/google-sso", GoogleSignOn)
 	r.HandleFunc("/auth/google/callback", Callback)
 	r.HandleFunc("/me", Me)
 
-	port := pkg.LoadFile("SERVER_PORT")
-
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/ws" {
-			r.ServeHTTP(w, req)
-			return
-		}
 		c.Handler(r).ServeHTTP(w, req)
 	})
 
+	port := pkg.LoadFile("SERVER_PORT")
 	return &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: handler,
 	}
+}
+
+func Health(w http.ResponseWriter, req *http.Request) {
+	// Check DB
+	sqlDB, err := database.DB.DB()
+	if err != nil || sqlDB.Ping() != nil {
+		slog.ErrorContext(req.Context(), "health: db unreachable")
+		http.Error(w, `{"status":"error","db":false}`, http.StatusServiceUnavailable)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }
