@@ -20,14 +20,15 @@ import (
 
 var DB *gorm.DB
 
-func InitDB(cfg *config.Database) {
+func InitDB(cfg *config.App) {
+
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		cfg.Host, cfg.User, cfg.Password, cfg.DBName, cfg.Port, cfg.SSLMode,
+		cfg.Database.Host, cfg.Database.User, cfg.Database.Password, cfg.Database.DBName, cfg.Database.Port, cfg.Database.SSLMode,
 	)
 
 	// Run migrations first using raw sql.DB
-	runMigrations(dsn, cfg.DBName)
+	runMigrations(dsn, cfg.Database.DBName)
 
 	// Then open GORM connection for the app
 	env := pkg.LoadFile("ENV")
@@ -49,7 +50,7 @@ func InitDB(cfg *config.Database) {
 	slog.Info("db pool configured", "max_open", 25, "max_idle", 10)
 
 	DB = db
-	slog.Info("database connected", "host", cfg.Host, "name", cfg.DBName)
+	slog.Info("database connected", "host", cfg.Database.Host, "name", cfg.Database.DBName)
 }
 
 func runMigrations(dsn, dbName string) {
