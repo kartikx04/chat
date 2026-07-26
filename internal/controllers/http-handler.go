@@ -29,7 +29,8 @@ func NewHTTPServer() *http.Server {
 
 	r.HandleFunc("/google-sso", GoogleSignOn)
 	r.HandleFunc("/auth/google/callback", Callback)
-	r.HandleFunc("/me", Me)
+
+	r.HandleFunc("/home", Home)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		c.Handler(r).ServeHTTP(w, req)

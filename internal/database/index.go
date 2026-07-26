@@ -10,24 +10,17 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/kartikx04/chat/cmd/app/config"
 	applogger "github.com/kartikx04/chat/internal/logger"
+	"github.com/kartikx04/chat/pkg"
 	_ "github.com/lib/pq"
 	gormpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type Config struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
-}
-
 var DB *gorm.DB
 
-func InitDB(cfg Config) {
+func InitDB(cfg *config.Database) {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		cfg.Host, cfg.User, cfg.Password, cfg.DBName, cfg.Port, cfg.SSLMode,
@@ -37,7 +30,7 @@ func InitDB(cfg Config) {
 	runMigrations(dsn, cfg.DBName)
 
 	// Then open GORM connection for the app
-	env := os.Getenv("ENV")
+	env := pkg.LoadFile("ENV")
 	db, err := gorm.Open(gormpostgres.Open(dsn), &gorm.Config{
 		Logger: applogger.NewSlogGormLogger(env),
 	})

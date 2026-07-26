@@ -137,7 +137,7 @@ func Logout(res http.ResponseWriter, req *http.Request) {
 }
 
 // internal/controllers/auth.go
-func Me(res http.ResponseWriter, req *http.Request) {
+func Home(res http.ResponseWriter, req *http.Request) {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 		slog.WarnContext(req.Context(), "me: no auth header")

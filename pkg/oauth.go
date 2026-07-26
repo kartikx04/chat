@@ -13,17 +13,26 @@ import (
 
 var (
 	OAuthgolang *oauth2.Config
-	Store       = sessions.NewCookieStore([]byte(LoadFile("TOKEN_SECRET")))
+	Store       *sessions.CookieStore
 )
 
-func init() {
-	Store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   3600,
-		HttpOnly: true,
-		Secure:   false,                // for localhost
-		SameSite: http.SameSiteLaxMode, // IMPORTANT
+func getStore() *sessions.CookieStore {
+	if Store == nil {
+		Store = sessions.NewCookieStore([]byte(LoadFile("TOKEN_SECRET")))
+		Store.Options = &sessions.Options{
+			Path:     "/",
+			MaxAge:   3600,
+			HttpOnly: true,
+			Secure:   false,
+			SameSite: http.SameSiteLaxMode,
+		}
 	}
+	return Store
+}
+
+// GetSession is a public function to safely get a session
+func GetSession(req *http.Request, sessionName string) (*sessions.Session, error) {
+	return getStore().Get(req, sessionName)
 }
 
 const (

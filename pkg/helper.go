@@ -7,8 +7,16 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func InitEnv() {
-	_ = godotenv.Load()
+func init() {
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		// Only panic if it's not a "file not found" error (env vars might be set another way)
+		if _, isNotExist := err.(*os.PathError); !isNotExist {
+			slog.Error(".env file not loaded", "error", err)
+		}
+	} else {
+		slog.Info(".env file loaded")
+	}
 }
 
 func LoadFile(key string) string {
