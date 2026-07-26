@@ -23,12 +23,11 @@ func main() {
 
 	server := controllers.NewHTTPServer()
 
-	// Start server in background
 	slog.Info("server running", "addr", server.Addr)
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("server error", "error", err)
-			os.Exit(1)
-		}
-	}()
+
+	// ListenAndServe blocks forever
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		slog.Error("server error", "error", err)
+		os.Exit(1)
+	}
 }
