@@ -1,9 +1,10 @@
 package config
 
 import (
+	"log"
 	"log/slog"
 
-	"github.com/joho/godotenv"
+	"github.com/caarlos0/env/v11"
 )
 
 type App struct {
@@ -40,20 +41,10 @@ type googleAuth struct {
 
 func New() (*App, error) {
 	cfg := &App{}
-	if err := godotenv.Load("../../.env"); err != nil {
-		return nil, err
+	err := env.Parse(cfg)
+	if err != nil {
+		log.Fatalf("Config error: %v", err)
 	}
 	slog.Info(".env loaded")
 	return cfg, nil
 }
-
-// func GetDatabase() *Database {
-// 	return &Database{
-// 		Host:     pkg.LoadFile("DB_HOST"),
-// 		Port:     pkg.LoadFile("DB_PORT"),
-// 		User:     pkg.LoadFile("DB_USER"),
-// 		Password: pkg.LoadFile("DB_PASSWORD"),
-// 		DBName:   pkg.LoadFile("DB_NAME"),
-// 		SSLMode:  pkg.LoadFile("DB_SSLMODE"),
-// 	}
-// }
