@@ -1,16 +1,14 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/goombaio/namegenerator"
 	"github.com/kartikx04/chat/internal/auth"
-	"github.com/kartikx04/chat/internal/database"
-	"github.com/kartikx04/chat/internal/models"
 	"github.com/kartikx04/chat/pkg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -27,101 +25,96 @@ func init() {
 }
 
 func GoogleSignOn(res http.ResponseWriter, req *http.Request) {
-	tokenString, err := pkg.TokenString()
+	state, err := pkg.GenerateStateToken()
 	if err != nil {
 		slog.ErrorContext(req.Context(), "failed to generate oauth state token", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	session, err := pkg.Store.Get(req, "tokenSession")
-	if err != nil {
-		slog.ErrorContext(req.Context(), "failed to get token session", "error", err)
-		http.Error(res, "internal server error", http.StatusInternalServerError)
-		return
-	}
+	http.SetCookie(res, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		Path:     "/",
+		MaxAge:   300,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
+	})
 
-	session.Values["tokenStringKey"] = tokenString
-	session.Save(req, res)
-
-	authURL := pkg.OAuthgolang.AuthCodeURL(tokenString)
+	authURL := pkg.OAuthgolang.AuthCodeURL(state)
 	slog.InfoContext(req.Context(), "oauth redirect initiated")
 	http.Redirect(res, req, authURL, http.StatusTemporaryRedirect)
 }
 
 func Callback(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
 	state := req.FormValue("state")
+	promptParam := req.URL.Query().Get("prompt")
+
+	stateCookie, cookieErr := req.Cookie("oauth_state")
+
+	if cookieErr != nil {
+		slog.Warn("oauth_state cookie missing on callback",
+			"likely_silent_auth", promptParam == "none",
+		)
+		http.Redirect(res, req, "/auth/google-sso", http.StatusFound)
+		return
+	}
+
+	if state != stateCookie.Value {
+		slog.Error("oauth_state MISMATCH - possible CSRF or stale link",
+			"query_state", state,
+			"cookie_state", stateCookie.Value,
+		)
+		http.Error(res, "internal server error", http.StatusBadRequest)
+		return
+	}
+
+	http.SetCookie(res, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+
 	code := req.FormValue("code")
+	if code == "" {
+		slog.ErrorContext(req.Context(), "code not found in callback")
+		http.Error(res, "internal server error", http.StatusBadRequest)
+		return
+	}
 
-	session, err := pkg.Store.Get(req, "tokenSession")
+	token, err := pkg.OAuthgolang.Exchange(ctx, code)
 	if err != nil {
-		slog.ErrorContext(req.Context(), "failed to get token session", "error", err)
+		slog.ErrorContext(req.Context(), "failed to exchange token", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	dataToken, ok := session.Values["tokenStringKey"].(string)
-	if !ok {
-		slog.WarnContext(req.Context(), "oauth callback: session expired or invalid")
-		http.Error(res, "session expired or invalid", http.StatusBadRequest)
-		return
-	}
-
-	data, err := pkg.GetUserData(state, code, dataToken)
+	// SECURITY: tokenBytes is not encrypted
+	tokenBytes, err := json.Marshal(token)
 	if err != nil {
-		slog.ErrorContext(req.Context(), "oauth get user data failed", "error", err)
-		http.Error(res, "authentication failed", http.StatusInternalServerError)
-		return
-	}
-
-	// Delete token session immediately after use
-	session.Options.MaxAge = -1
-	session.Save(req, res)
-
-	var authStruct models.OAuthData
-	if err := json.Unmarshal([]byte(data), &authStruct); err != nil {
-		slog.ErrorContext(req.Context(), "failed to unmarshal oauth data", "error", err)
+		slog.Error("failed to marshal token payload", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	encoded := base64.RawURLEncoding.EncodeToString(tokenBytes)
 
-	if !authStruct.VerifiedEmail {
-		slog.WarnContext(req.Context(), "oauth callback: unverified email rejected", "email", authStruct.Email)
-		http.Error(res, "email not verified", http.StatusForbidden)
-		return
-	}
+	http.SetCookie(res, &http.Cookie{
+		Name:     "oauth_token_raw",
+		Value:    encoded,
+		Path:     "/",
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
 
-	userRepo := database.NewUserRepository(database.DB)
-	seed := time.Now().UTC().UnixNano()
-	name := namegenerator.NewNameGenerator(seed).Generate()
-
-	user, err := userRepo.GetOrCreateUser(authStruct.Id, authStruct.Email, name, authStruct.Picture)
-	if err != nil {
-		slog.ErrorContext(req.Context(), "failed to get or create user", "error", err, "email", authStruct.Email)
-		http.Error(res, "internal server error", http.StatusInternalServerError)
-		return
-	}
-	userSession, _ := pkg.Store.Get(req, "userSession")
-	userSession.Values = map[any]any{
-		"email":   authStruct.Email,
-		"picture": authStruct.Picture,
-	}
-	userSession.Save(req, res)
-
-	slog.InfoContext(req.Context(), "oauth login success",
-		"user_id", user.Id.String(),
-		"username", user.Username,
-	)
-
-	token, err := auth.GenerateToken(user.Id.String(), user.Username, authStruct.Email)
-	if err != nil {
-		slog.ErrorContext(req.Context(), "failed to generate jwt", "error", err)
-		http.Error(res, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	frontendURL := pkg.LoadFile("FRONTEND_URL")
-	http.Redirect(res, req, frontendURL+"/auth/callback?token="+token, http.StatusFound)
+	slog.Info("callback succeeded, redirecting to /home")
+	http.Redirect(res, req, "/home", http.StatusFound)
 }
 
 func Logout(res http.ResponseWriter, req *http.Request) {
@@ -132,11 +125,17 @@ func Logout(res http.ResponseWriter, req *http.Request) {
 		MaxAge:   -1,
 		HttpOnly: true,
 	})
+	http.SetCookie(res, &http.Cookie{
+		Name:     "oauth_token_raw",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
 	slog.InfoContext(req.Context(), "user logged out")
 	http.Redirect(res, req, "/", http.StatusSeeOther)
 }
 
-// internal/controllers/auth.go
 func Home(res http.ResponseWriter, req *http.Request) {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {

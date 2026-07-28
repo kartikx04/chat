@@ -5,35 +5,32 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/pkg"
 	"github.com/rs/cors"
 )
 
 func NewHTTPServer() *http.Server {
-	r := http.NewServeMux()
+	chi := chi.NewRouter()
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{
-			"http://localhost:3000",
-			"https://chat-0rnj.onrender.com",
-			"https://banterrr.vercel.app",
-		},
+		AllowedOrigins:   []string{},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization", "Cookie"},
 		ExposedHeaders:   []string{"Set-Cookie"},
 		AllowCredentials: true,
 	})
 
-	r.HandleFunc("/health", Health)
+	chi.Get("/health", Health)
 
-	r.HandleFunc("/google-sso", GoogleSignOn)
-	r.HandleFunc("/auth/google/callback", Callback)
+	chi.Get("/auth/google-sso", GoogleSignOn)
+	chi.Get("/auth/google/callback", Callback)
 
-	r.HandleFunc("/home", Home)
+	chi.Get("/home", Home)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		c.Handler(r).ServeHTTP(w, req)
+		c.Handler(chi).ServeHTTP(w, req)
 	})
 
 	port := pkg.LoadFile("SERVER_PORT")

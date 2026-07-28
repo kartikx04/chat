@@ -3,37 +3,15 @@ package pkg
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"io"
 	"net/http"
 
-	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 )
 
-var (
-	OAuthgolang *oauth2.Config
-	Store       *sessions.CookieStore
-)
-
-func getStore() *sessions.CookieStore {
-	if Store == nil {
-		Store = sessions.NewCookieStore([]byte(LoadFile("TOKEN_SECRET")))
-		Store.Options = &sessions.Options{
-			Path:     "/",
-			MaxAge:   3600,
-			HttpOnly: true,
-			Secure:   false,
-			SameSite: http.SameSiteLaxMode,
-		}
-	}
-	return Store
-}
-
-// GetSession is a public function to safely get a session
-func GetSession(req *http.Request, sessionName string) (*sessions.Session, error) {
-	return getStore().Get(req, sessionName)
-}
+var OAuthgolang *oauth2.Config
 
 const (
 	tokenSet    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -41,7 +19,7 @@ const (
 )
 
 // GenerateRandomString generates a random string of the specified length(15).
-func TokenString() (string, error) {
+func GenerateStateToken() (string, error) {
 	charsetLength := len(tokenSet)
 
 	randomBytes := make([]byte, tokenLength)
@@ -54,7 +32,7 @@ func TokenString() (string, error) {
 		randomBytes[i] = tokenSet[int(randomBytes[i])%charsetLength]
 	}
 
-	return string(randomBytes), nil
+	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
 }
 
 // GetUserData validates verification request and returns data of verified google user
