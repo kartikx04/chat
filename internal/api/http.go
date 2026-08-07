@@ -1,12 +1,11 @@
-package controllers
+package api
 
 import (
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/kartikx04/chat/internal/database"
+	"github.com/kartikx04/chat/internal/api/route"
 	"github.com/kartikx04/chat/pkg"
 	"github.com/rs/cors"
 )
@@ -22,12 +21,7 @@ func NewHTTPServer() *http.Server {
 		AllowCredentials: true,
 	})
 
-	chi.Get("/health", Health)
-
-	chi.Get("/auth/google-sso", GoogleSignOn)
-	chi.Get("/auth/google/callback", Callback)
-
-	chi.Get("/home", Home)
+	route.Register(chi)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		c.Handler(chi).ServeHTTP(w, req)
@@ -38,17 +32,4 @@ func NewHTTPServer() *http.Server {
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: handler,
 	}
-}
-
-func Health(w http.ResponseWriter, req *http.Request) {
-	// Check DB
-	sqlDB, err := database.DB.DB()
-	if err != nil || sqlDB.Ping() != nil {
-		slog.ErrorContext(req.Context(), "health: db unreachable")
-		http.Error(w, `{"status":"error","db":false}`, http.StatusServiceUnavailable)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 }

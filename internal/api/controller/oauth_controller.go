@@ -1,14 +1,12 @@
-package controllers
+package controller
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/kartikx04/chat/internal/auth"
 	"github.com/kartikx04/chat/pkg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -115,52 +113,4 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 
 	slog.Info("callback succeeded, redirecting to /home")
 	http.Redirect(res, req, "/home", http.StatusFound)
-}
-
-func Logout(res http.ResponseWriter, req *http.Request) {
-	http.SetCookie(res, &http.Cookie{
-		Name:     "userSession",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-	})
-	http.SetCookie(res, &http.Cookie{
-		Name:     "oauth_token_raw",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-	})
-	slog.InfoContext(req.Context(), "user logged out")
-	http.Redirect(res, req, "/", http.StatusSeeOther)
-}
-
-func Home(res http.ResponseWriter, req *http.Request) {
-	authHeader := req.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		slog.WarnContext(req.Context(), "me: no auth header")
-		http.Error(res, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-	claims, err := auth.ValidateToken(tokenStr)
-	if err != nil {
-		slog.WarnContext(req.Context(), "me: invalid token", "error", err)
-		http.Error(res, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	slog.DebugContext(req.Context(), "me: identity resolved",
-		"user_id", claims.UserID,
-		"username", claims.Username,
-	)
-
-	res.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(res).Encode(map[string]string{
-		"id":       claims.UserID,
-		"username": claims.Username,
-		"email":    claims.Email,
-	})
 }

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/kartikx04/chat/cmd/app/config"
-	"github.com/kartikx04/chat/internal/controllers"
+	"github.com/kartikx04/chat/internal/api"
 	"github.com/kartikx04/chat/internal/database"
 	applogger "github.com/kartikx04/chat/internal/logger"
 	"github.com/kartikx04/chat/pkg"
@@ -19,7 +19,7 @@ func Run(cfg *config.App) {
 
 	database.InitDB(cfg)
 
-	server := controllers.NewHTTPServer()
+	server := api.NewHTTPServer()
 
 	slog.Info("server running", "addr", server.Addr)
 
