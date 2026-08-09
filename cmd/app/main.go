@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/kartikx04/chat/cmd/app/config"
-	"github.com/kartikx04/chat/internal/app"
+	"github.com/kartikx04/chat/internal/bootstrap"
 )
 
 func main() {
@@ -15,5 +15,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	app.Run(cfg)
+	bootstrap.Run(cfg)
 }
