@@ -24,19 +24,19 @@ type database struct {
 }
 
 type server struct {
-	port string `env:"SERVER_PORT,required"`
-	env  string `env:"ENV" envDefault:"development"`
+	Port string `env:"SERVER_PORT,required"`
+	Env  string `env:"ENV" envDefault:"development"`
 }
 
 type jwt struct {
-	secret string `env:"JWT_SECRET,required"`
+	Secret string `env:"JWT_SECRET,required"`
 }
 
 type googleAuth struct {
-	clientId     string `env:"CLIENT_ID,required"`
-	clientSecret string `env:"CLIENT_SECRET,required"`
-	redirectURL  string `env:"REDIRECT_URL,required"`
-	tokenSecret  string `env:"TOKEN_SECRET,required"`
+	ClientId     string `env:"CLIENT_ID,required"`
+	ClientSecret string `env:"CLIENT_SECRET,required"`
+	RedirectURL  string `env:"REDIRECT_URL,required"`
+	TokenSecret  string `env:"TOKEN_SECRET,required"`
 }
 
 func New() (*App, error) {

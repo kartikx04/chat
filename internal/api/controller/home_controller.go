@@ -12,7 +12,7 @@ import (
 func Home(res http.ResponseWriter, req *http.Request) {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		slog.WarnContext(req.Context(), "me: no auth header")
+		slog.WarnContext(req.Context(), "no auth header")
 		http.Error(res, "unauthorized", http.StatusUnauthorized)
 		return
 	}

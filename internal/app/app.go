@@ -19,7 +19,7 @@ func Run(cfg *config.App) {
 
 	database.InitDB(cfg)
 
-	server := api.NewHTTPServer()
+	server := api.NewHTTPServer(cfg)
 
 	slog.Info("server running", "addr", server.Addr)
 

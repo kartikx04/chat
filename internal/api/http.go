@@ -1,16 +1,15 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/api/route"
-	"github.com/kartikx04/chat/pkg"
 	"github.com/rs/cors"
 )
 
-func NewHTTPServer() *http.Server {
+func NewHTTPServer(cfg *config.App) *http.Server {
 	chi := chi.NewRouter()
 
 	c := cors.New(cors.Options{
@@ -27,9 +26,8 @@ func NewHTTPServer() *http.Server {
 		c.Handler(chi).ServeHTTP(w, req)
 	})
 
-	port := pkg.LoadFile("SERVER_PORT")
 	return &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
+		Addr:    ":" + cfg.Server.Port,
 		Handler: handler,
 	}
 }

@@ -62,6 +62,12 @@ func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
 	buf.WriteString(levelColor(r.Level))
 	buf.WriteByte(' ')
 
+	// message — bold white
+	buf.WriteString(bold)
+	buf.WriteString(r.Message)
+	buf.WriteString(reset)
+	buf.WriteByte(' ')
+
 	// source — gray, just filename:line
 	if r.PC != 0 {
 		frames := runtime.CallersFrames([]uintptr{r.PC})
@@ -74,11 +80,6 @@ func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
 		buf.WriteByte(' ')
 	}
 
-	// message — bold white
-	buf.WriteString(bold)
-	buf.WriteString(r.Message)
-	buf.WriteString(reset)
-
 	// key=value attrs — key in blue, value plain
 	r.Attrs(func(a slog.Attr) bool {
 		buf.WriteByte(' ')
@@ -87,8 +88,9 @@ func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
 		buf.WriteString(reset)
 		buf.WriteByte('=')
 		val := fmt.Sprintf("%v", a.Value.Any())
+		buf.WriteString(cyan)
 		// quote values with spaces so they're clearly bounded
-		if containsSpace(val) {
+		if containsSpace(val) || a.Value.Kind() == slog.KindString {
 			buf.WriteByte('"')
 			buf.WriteString(val)
 			buf.WriteByte('"')

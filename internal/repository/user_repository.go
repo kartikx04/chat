@@ -1,18 +1,23 @@
-package database
+package repository
 
 import (
 	"errors"
+	"log/slog"
 
 	"github.com/kartikx04/chat/internal/models"
 	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	logger *slog.Logger
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *gorm.DB, logger *slog.Logger) *UserRepository {
+	return &UserRepository{
+		db:     db,
+		logger: logger,
+	}
 }
 
 func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*models.Users, error) {
@@ -24,9 +29,10 @@ func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*
 		Role:     "user",
 	}
 
-	result := r.db.Create(user) // ← GORM handles INSERT
+	result := r.db.Create(user)
 
 	if result.Error != nil {
+		// r.logger.Error("error creating user", "error", result.Error)
 		return nil, result.Error
 	}
 	return user, nil
