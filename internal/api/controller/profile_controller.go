@@ -7,9 +7,14 @@ import (
 	"strings"
 
 	"github.com/kartikx04/chat/internal/auth"
+	"github.com/kartikx04/chat/internal/domain"
 )
 
-func Home(res http.ResponseWriter, req *http.Request) {
+type ProfileController struct {
+	ProfileUseCase domain.ProfileUseCase
+}
+
+func (dc *ProfileController) Profile(res http.ResponseWriter, req *http.Request) {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 		slog.WarnContext(req.Context(), "no auth header")

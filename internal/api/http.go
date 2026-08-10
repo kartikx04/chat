@@ -5,12 +5,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/cmd/app/config"
-	"github.com/kartikx04/chat/internal/api/route"
 	"github.com/rs/cors"
 )
 
-func NewHTTPServer(cfg *config.App) *http.Server {
-	chi := chi.NewRouter()
+func NewHTTPServer(cfg *config.App, router *chi.Mux) *http.Server {
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{},
@@ -20,10 +18,8 @@ func NewHTTPServer(cfg *config.App) *http.Server {
 		AllowCredentials: true,
 	})
 
-	route.Register(chi)
-
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		c.Handler(chi).ServeHTTP(w, req)
+		c.Handler(router).ServeHTTP(w, req)
 	})
 
 	return &http.Server{

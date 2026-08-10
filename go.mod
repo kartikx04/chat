@@ -1,8 +1,6 @@
 module github.com/kartikx04/chat
 
-go 1.24.0
-
-toolchain go1.24.12
+go 1.25.0
 
 require (
 	github.com/caarlos0/env/v11 v11.4.1
@@ -27,7 +25,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 )

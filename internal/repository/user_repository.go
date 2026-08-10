@@ -32,7 +32,7 @@ func (r *UserRepository) CreateUser(authOId, email, username, picture string) (*
 	result := r.db.Create(user)
 
 	if result.Error != nil {
-		// r.logger.Error("error creating user", "error", result.Error)
+		// r.slog.Error("error creating user", "error", result.Error)
 		return nil, result.Error
 	}
 	return user, nil

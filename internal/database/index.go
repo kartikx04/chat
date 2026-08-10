@@ -20,7 +20,7 @@ import (
 
 var DB *gorm.DB
 
-func InitDB(cfg *config.App) {
+func Init(cfg *config.App) *gorm.DB {
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
@@ -51,6 +51,7 @@ func InitDB(cfg *config.App) {
 
 	DB = db
 	slog.Info("database connected", "host", cfg.Database.Host, "name", cfg.Database.DBName)
+	return DB
 }
 
 func runMigrations(dsn, dbName string) {

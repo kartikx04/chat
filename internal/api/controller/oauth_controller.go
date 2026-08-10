@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"log/slog"
@@ -11,6 +12,11 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
+
+type UseCase interface {
+	SignUp(context.Context) error
+	SignIn(context.Context) (string, error)
+}
 
 func init() {
 	pkg.OAuthgolang = &oauth2.Config{

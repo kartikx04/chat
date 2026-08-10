@@ -1,4 +1,4 @@
-// internal/logger/logger.go
+// internal/logger/slog.go
 package logger
 
 import (
@@ -117,7 +117,7 @@ func containsSpace(s string) bool {
 	return false
 }
 
-func Init(env string) {
+func Init(env string) *slog.Logger {
 	var handler slog.Handler
 
 	if env == "production" {
@@ -129,5 +129,7 @@ func Init(env string) {
 		handler = &colorHandler{lvl: slog.LevelDebug}
 	}
 
-	slog.SetDefault(slog.New(handler))
+	log := slog.New(handler)
+	slog.SetDefault(log)
+	return log
 }
