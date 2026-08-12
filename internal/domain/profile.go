@@ -7,5 +7,5 @@ import (
 )
 
 type ProfileUseCase interface {
-	GetUserById(c context.Context, Id string) (*models.Users, error)
+	GetProfileById(c context.Context, Id string) (*models.Users, error)
 }

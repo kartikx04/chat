@@ -20,7 +20,8 @@ func NewProfileUseCase(ctx context.Context, userRepo *repository.UserRepository)
 	}
 }
 
-func (pu *profileUseCase) GetUserById(c context.Context, Id string) (*models.Users, error) {
-	// get Profile related data...
+func (pu *profileUseCase) GetProfileById(c context.Context, Id string) (*models.Users, error) {
+	// TODO: set ctx timeout duration
+
 	return nil, nil
 }
