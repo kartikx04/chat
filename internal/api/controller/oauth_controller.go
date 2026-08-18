@@ -1,22 +1,14 @@
 package controller
 
 import (
-	"context"
-	"encoding/base64"
-	"encoding/json"
 	"log/slog"
 	"net/http"
-	"time"
 
+	"github.com/kartikx04/chat/internal/domain"
 	"github.com/kartikx04/chat/pkg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
-
-type UseCase interface {
-	SignUp(context.Context) error
-	SignIn(context.Context) (string, error)
-}
 
 func init() {
 	pkg.OAuthgolang = &oauth2.Config{
@@ -28,12 +20,16 @@ func init() {
 	}
 }
 
-func GoogleSignOn(res http.ResponseWriter, req *http.Request) {
-	state, err := pkg.GenerateStateToken()
+type AuthController struct {
+	AuthUseCase domain.AuthUseCase
+}
+
+func (ac *AuthController) GoogleSignOn(res http.ResponseWriter, req *http.Request) {
+
+	state, authURL, err := ac.AuthUseCase.InitiateGoogleOAuth(req.Context())
 	if err != nil {
-		slog.ErrorContext(req.Context(), "failed to generate oauth state token", "error", err)
-		http.Error(res, "internal server error", http.StatusInternalServerError)
-		return
+		slog.WarnContext(req.Context(), "error signing in", "error", err)
+		http.Error(res, "internal server error", http.StatusBadRequest)
 	}
 
 	http.SetCookie(res, &http.Cookie{
@@ -46,20 +42,17 @@ func GoogleSignOn(res http.ResponseWriter, req *http.Request) {
 		Secure:   false,
 	})
 
-	authURL := pkg.OAuthgolang.AuthCodeURL(state)
 	slog.InfoContext(req.Context(), "oauth redirect initiated")
 	http.Redirect(res, req, authURL, http.StatusTemporaryRedirect)
 }
 
-func Callback(res http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-
+func (ac *AuthController) Callback(res http.ResponseWriter, req *http.Request) {
 	state := req.FormValue("state")
 	promptParam := req.URL.Query().Get("prompt")
 
-	stateCookie, cookieErr := req.Cookie("oauth_state")
+	stateCookie, err := req.Cookie("oauth_state")
 
-	if cookieErr != nil {
+	if err != nil {
 		slog.Warn("oauth_state cookie missing on callback",
 			"likely_silent_auth", promptParam == "none",
 		)
@@ -91,32 +84,21 @@ func Callback(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token, err := pkg.OAuthgolang.Exchange(ctx, code)
+	sessionID, err := ac.AuthUseCase.FinaliseGoogleAuth(req.Context(), code)
 	if err != nil {
-		slog.ErrorContext(req.Context(), "failed to exchange token", "error", err)
+		slog.ErrorContext(req.Context(), "failed to finalize google auth", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
-
-	// SECURITY: tokenBytes is not encrypted
-	tokenBytes, err := json.Marshal(token)
-	if err != nil {
-		slog.Error("failed to marshal token payload", "error", err)
-		http.Error(res, "internal server error", http.StatusInternalServerError)
-		return
-	}
-	encoded := base64.RawURLEncoding.EncodeToString(tokenBytes)
 
 	http.SetCookie(res, &http.Cookie{
-		Name:     "oauth_token_raw",
-		Value:    encoded,
+		Name:     "session_id",
+		Value:    sessionID,
 		Path:     "/",
-		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	slog.Info("callback succeeded, redirecting to /home")
-	http.Redirect(res, req, "/home", http.StatusFound)
+	http.Redirect(res, req, pkg.LoadFile("FRONTEND_URL")+"/home", http.StatusFound)
 }

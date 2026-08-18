@@ -1,10 +1,10 @@
 package bootstrap
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/cmd/app/config"
@@ -18,12 +18,13 @@ import (
 func Run(cfg *config.App) {
 	env := pkg.LoadFile("ENV")
 
-	ctx := context.Background()
 	logger := applogger.Init(env)
 	db := database.Init(cfg)
 
 	chi := chi.NewRouter()
-	route.Register(ctx, db, chi, logger)
+
+	timeout := time.Duration(3) * time.Second
+	route.Register(timeout, db, chi, logger)
 
 	server := api.NewHTTPServer(cfg, chi)
 

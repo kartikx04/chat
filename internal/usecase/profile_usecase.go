@@ -2,25 +2,26 @@ package useCase
 
 import (
 	"context"
+	"time"
 
 	"github.com/kartikx04/chat/internal/domain"
-	"github.com/kartikx04/chat/internal/repository"
 )
 
 type profileUseCase struct {
-	ctx      context.Context
-	userRepo *repository.UserRepository
+	ctx            context.Context
+	userRepo       domain.UserRepository
+	ContextTimeout time.Duration
 }
 
-func NewProfileUseCase(ctx context.Context, userRepo *repository.UserRepository) domain.ProfileUseCase {
+func NewProfileUseCase(timeout time.Duration, userRepo domain.UserRepository) domain.ProfileUseCase {
 	return &profileUseCase{
-		ctx:      ctx,
-		userRepo: userRepo,
+		ContextTimeout: timeout,
+		userRepo:       userRepo,
 	}
 }
 
 func (pu *profileUseCase) GetProfileById(c context.Context, id string) (*domain.Profile, error) {
-	user, err := pu.userRepo.GetUserById(id)
+	user, err := pu.userRepo.GetByID(c, id)
 	if err != nil {
 		return nil, err
 	}

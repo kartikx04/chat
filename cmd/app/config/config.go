@@ -15,12 +15,13 @@ type App struct {
 }
 
 type database struct {
-	Host     string `env:"DB_HOST,required"`
-	Port     string `env:"DB_PORT,required"`
-	User     string `env:"DB_USER,required"`
-	Password string `env:"DB_PASSWORD,required"`
-	DBName   string `env:"DB_NAME,required"`
-	SSLMode  string `env:"DB_SSLMODE,required"`
+	Host           string `env:"DB_HOST,required"`
+	Port           string `env:"DB_PORT,required"`
+	User           string `env:"DB_USER,required"`
+	Password       string `env:"DB_PASSWORD,required"`
+	DBName         string `env:"DB_NAME,required"`
+	SSLMode        string `env:"DB_SSLMODE,required"`
+	ContextTimeout int    `env:"DB_CONTEXT_TIMEOUT" envDefault:"5"`
 }
 
 type server struct {

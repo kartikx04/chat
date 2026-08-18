@@ -1,8 +1,8 @@
 package route
 
 import (
-	"context"
 	"log/slog"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/internal/api/controller"
@@ -11,10 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewProfileRouter(ctx context.Context, db *gorm.DB, r chi.Router, logger *slog.Logger) {
+func NewProfileRouter(timeout time.Duration, db *gorm.DB, r chi.Router, logger *slog.Logger) {
 	ur := repository.NewUserRepository(db, logger)
 	dc := &controller.ProfileController{
-		ProfileUseCase: useCase.NewProfileUseCase(ctx, ur),
+		ProfileUseCase: useCase.NewProfileUseCase(timeout, ur),
 	}
 	r.Get("/public/Profile", dc.Profile)
 }

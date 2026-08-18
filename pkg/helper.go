@@ -3,7 +3,9 @@ package pkg
 import (
 	"log/slog"
 	"os"
+	"time"
 
+	"github.com/goombaio/namegenerator"
 	"github.com/joho/godotenv"
 )
 
@@ -23,4 +25,12 @@ func LoadFile(key string) string {
 		os.Exit(1)
 	}
 	return val
+}
+
+func GenerateUniqueName() string {
+	seed := time.Now().UTC().UnixNano()
+	nameGenerator := namegenerator.NewNameGenerator(seed)
+
+	name := nameGenerator.Generate()
+	return name
 }
