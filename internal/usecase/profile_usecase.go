@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/kartikx04/chat/internal/domain"
-	"github.com/kartikx04/chat/internal/models"
 	"github.com/kartikx04/chat/internal/repository"
 )
 
@@ -20,8 +19,11 @@ func NewProfileUseCase(ctx context.Context, userRepo *repository.UserRepository)
 	}
 }
 
-func (pu *profileUseCase) GetProfileById(c context.Context, Id string) (*models.Users, error) {
-	// TODO: set ctx timeout duration
+func (pu *profileUseCase) GetProfileById(c context.Context, id string) (*domain.Profile, error) {
+	user, err := pu.userRepo.GetUserById(id)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	return &domain.Profile{Name: user.Username, Email: user.Email}, nil
 }

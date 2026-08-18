@@ -2,10 +2,13 @@ package domain
 
 import (
 	"context"
-
-	"github.com/kartikx04/chat/internal/models"
 )
 
+type Profile struct {
+	Name  string
+	Email string
+}
+
 type ProfileUseCase interface {
-	GetProfileById(c context.Context, Id string) (*models.Users, error)
+	GetProfileById(c context.Context, Id string) (*Profile, error)
 }
