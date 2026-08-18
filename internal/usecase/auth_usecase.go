@@ -73,7 +73,7 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 
 			user = models.User{
-				AuthOId:  googleUser.ID,
+				OAuthID:  googleUser.ID,
 				Email:    googleUser.Email,
 				Username: pkg.GenerateUniqueName(),
 				Picture:  googleUser.Picture,
@@ -93,7 +93,7 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 
 	// session := models.Session{
 	// 	ID:           uuid.NewString(),
-	// 	UserID:       user.Id,
+	// 	UserID:       user.ID,
 	// 	RefreshToken: token.RefreshToken,
 	// 	ExpiresAt:    token.Expiry,
 	// }

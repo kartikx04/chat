@@ -20,7 +20,7 @@ func NewProfileUseCase(timeout time.Duration, userRepo domain.UserRepository) do
 	}
 }
 
-func (pu *profileUseCase) GetProfileById(c context.Context, id string) (*domain.Profile, error) {
+func (pu *profileUseCase) GetProfileByID(c context.Context, id string) (*domain.Profile, error) {
 	user, err := pu.userRepo.GetByID(c, id)
 	if err != nil {
 		return nil, err

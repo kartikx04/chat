@@ -34,7 +34,7 @@ func (ur *userRepository) Create(ctx context.Context, user *models.User) error {
 
 	ur.logger.InfoContext(ctx,
 		"user created",
-		"user_id", user.Id,
+		"user_id", user.ID,
 		"email", user.Email,
 	)
 

@@ -7,8 +7,8 @@ import (
 )
 
 type User struct {
-	Id        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	AuthOId   string    `gorm:"unique" json:"auth_o_id"`
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	OAuthID   string    `gorm:"unique" json:"auth_o_id"`
 	Email     string    `gorm:"unique" json:"email"`
 	Username  string    `gorm:"unique" json:"username"`
 	Picture   string    `json:"picture"`
@@ -17,7 +17,7 @@ type User struct {
 }
 
 type OAuthData struct {
-	Id            string `gorm:"primaryKey" json:"id"`
+	ID            string `gorm:"primaryKey" json:"id"`
 	Email         string `gorm:"unique" json:"email"`
 	VerifiedEmail bool   `json:"verified_email"`
 	Picture       string `json:"picture"`
