@@ -7,18 +7,12 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	OAuthID   string    `gorm:"unique" json:"auth_o_id"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	OAuthID   string    `gorm:"unique" json:"oauth_id"`
 	Email     string    `gorm:"unique" json:"email"`
 	Username  string    `gorm:"unique" json:"username"`
 	Picture   string    `json:"picture"`
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
-}
-
-type OAuthData struct {
-	ID            string `gorm:"primaryKey" json:"id"`
-	Email         string `gorm:"unique" json:"email"`
-	VerifiedEmail bool   `json:"verified_email"`
-	Picture       string `json:"picture"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
