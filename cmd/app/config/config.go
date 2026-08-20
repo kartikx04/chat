@@ -34,7 +34,7 @@ type jwt struct {
 }
 
 type googleAuth struct {
-	ClientId     string `env:"CLIENT_ID,required"`
+	ClientID     string `env:"CLIENT_ID,required"`
 	ClientSecret string `env:"CLIENT_SECRET,required"`
 	RedirectURL  string `env:"REDIRECT_URL,required"`
 	TokenSecret  string `env:"TOKEN_SECRET,required"`
@@ -46,6 +46,6 @@ func New() (*App, error) {
 	if err != nil {
 		log.Fatalf("Config error: %v", err)
 	}
-	slog.Info(".env loaded")
+	slog.Info("config loaded")
 	return cfg, nil
 }

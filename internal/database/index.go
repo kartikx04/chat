@@ -28,7 +28,7 @@ func Init(cfg *config.App) *gorm.DB {
 	)
 
 	// Run migrations first using raw sql.DB
-	// runMigrations(dsn, cfg.Database.DBName)
+	runMigrations(dsn, cfg.Database.DBName)
 
 	// Then open GORM connection for the app
 	env := pkg.LoadFile("ENV")

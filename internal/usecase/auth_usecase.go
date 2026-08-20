@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/kartikx04/chat/internal/domain"
 	"github.com/kartikx04/chat/internal/models"
 	"github.com/kartikx04/chat/pkg"
@@ -17,6 +18,7 @@ import (
 type authUseCase struct {
 	oauthConfig    *oauth2.Config
 	userRepo       domain.UserRepository
+	sessionRepo    domain.SessionRepository
 	contextTimeout time.Duration
 }
 
@@ -28,10 +30,11 @@ type GoogleUser struct {
 	Picture       string `json:"picture"`
 }
 
-func NewAuthUseCase(oauthConfig *oauth2.Config, userRepo domain.UserRepository, timeout time.Duration) domain.AuthUseCase {
+func NewAuthUseCase(oauthConfig *oauth2.Config, userRepo domain.UserRepository, sessionRepo domain.SessionRepository, timeout time.Duration) domain.AuthUseCase {
 	return &authUseCase{
 		oauthConfig:    oauthConfig,
 		userRepo:       userRepo,
+		sessionRepo:    sessionRepo,
 		contextTimeout: timeout,
 	}
 }
@@ -73,11 +76,14 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 
 			user = models.User{
-				OAuthID:  googleUser.ID,
-				Email:    googleUser.Email,
-				Username: pkg.GenerateUniqueName(),
-				Picture:  googleUser.Picture,
-				Role:     "user",
+				ID:        uuid.New(),
+				OAuthID:   googleUser.ID,
+				Email:     googleUser.Email,
+				Username:  pkg.GenerateUniqueName(),
+				Picture:   googleUser.Picture,
+				Role:      "user",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			}
 
 			if err := au.userRepo.Create(ctx, &user); err != nil {
@@ -88,19 +94,18 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 		}
 	}
 
-	sessionID := "asdf"
-	// sessionID := uuid.NewString()
-
-	// session := models.Session{
-	// 	ID:           uuid.NewString(),
-	// 	UserID:       user.ID,
-	// 	RefreshToken: token.RefreshToken,
-	// 	ExpiresAt:    token.Expiry,
-	// }
-
-	// if err := au.sessionRepo.Create(ctx, &session); err != nil {
-	// 	return "", err
-	// }
+	sessionID := pkg.GenerateSecureID()
+	session := models.Sessions{
+		ID:         uuid.New(),
+		SessionID:  sessionID,
+		UserID:     user.ID,
+		ExpiresAt:  time.Now().Add(72 * time.Hour),
+		CreatedAt:  time.Now(),
+		LastUsedAt: time.Now(),
+	}
+	if err := au.sessionRepo.Create(ctx, &session); err != nil {
+		return "", err
+	}
 
 	return sessionID, nil
 }

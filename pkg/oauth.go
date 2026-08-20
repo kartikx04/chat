@@ -35,6 +35,14 @@ func GenerateStateToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
 }
 
+func GenerateSecureID() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	return base64.URLEncoding.EncodeToString(b)
+}
+
 // GetUserData validates verification request and returns data of verified google user
 func GetUserData(state, code, tokenCode string) ([]byte, error) {
 	// compares the generated token string to the token retrieved from the parsed URL

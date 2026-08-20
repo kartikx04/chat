@@ -10,5 +10,5 @@ type Profile struct {
 }
 
 type ProfileUseCase interface {
-	GetProfileById(c context.Context, Id string) (*Profile, error)
+	GetProfileByID(c context.Context, ID string) (*Profile, error)
 }
