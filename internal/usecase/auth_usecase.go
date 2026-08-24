@@ -95,7 +95,7 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 	}
 
 	sessionID := pkg.GenerateSecureID()
-	session := models.Sessions{
+	session := models.Session{
 		ID:         uuid.New(),
 		SessionID:  sessionID,
 		UserID:     user.ID,

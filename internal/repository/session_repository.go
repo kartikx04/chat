@@ -21,7 +21,7 @@ func NewSessionRepository(db *gorm.DB, logger *slog.Logger) domain.SessionReposi
 	}
 }
 
-func (sr *sessionRepository) Create(ctx context.Context, session *models.Sessions) error {
+func (sr *sessionRepository) Create(ctx context.Context, session *models.Session) error {
 	if err := sr.db.WithContext(ctx).Create(session).Error; err != nil {
 		sr.logger.ErrorContext(ctx,
 			"failed to create session",
@@ -40,15 +40,15 @@ func (sr *sessionRepository) Create(ctx context.Context, session *models.Session
 	return nil
 }
 
-func (sr *sessionRepository) GetByID(ctx context.Context, id string) (models.Sessions, error) {
-	var session models.Sessions
+func (sr *sessionRepository) GetByID(ctx context.Context, id string) (models.Session, error) {
+	var session models.Session
 
 	err := sr.db.WithContext(ctx).
 		Where("session_id = ?", id).
 		First(session).Error
 
 	if err != nil {
-		return models.Sessions{}, err
+		return models.Session{}, err
 	}
 
 	return session, nil
@@ -57,7 +57,7 @@ func (sr *sessionRepository) GetByID(ctx context.Context, id string) (models.Ses
 func (sr *sessionRepository) DeleteByID(ctx context.Context, id string) error {
 	result := sr.db.WithContext(ctx).
 		Where("session_id = ?", id).
-		Delete(&models.Sessions{})
+		Delete(&models.Session{})
 
 	return result.Error
 }
