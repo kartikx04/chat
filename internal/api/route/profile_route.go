@@ -16,5 +16,5 @@ func NewProfileRouter(timeout time.Duration, db *gorm.DB, r chi.Router, logger *
 	dc := &controller.ProfileController{
 		ProfileUseCase: useCase.NewProfileUseCase(timeout, ur),
 	}
-	r.Get("/public/Profile", dc.Profile)
+	r.Get("/public/profile", dc.Profile)
 }

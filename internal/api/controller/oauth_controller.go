@@ -96,7 +96,7 @@ func (ac *AuthController) Callback(res http.ResponseWriter, req *http.Request) {
 		Value:    sessionID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   pkg.LoadFile("ENV") == "production",
 		SameSite: http.SameSiteLaxMode,
 	})
 

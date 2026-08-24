@@ -15,5 +15,6 @@ func Register(timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logge
 	r.Get("/health", controller.Health)
 
 	NewAuthRouter(timeout, db, r, logger)
+	NewLogoutRouter(timeout, db, r, logger)
 	NewProfileRouter(timeout, db, r, logger)
 }

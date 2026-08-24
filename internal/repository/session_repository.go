@@ -39,3 +39,25 @@ func (sr *sessionRepository) Create(ctx context.Context, session *models.Session
 
 	return nil
 }
+
+func (sr *sessionRepository) GetByID(ctx context.Context, id string) (models.Sessions, error) {
+	var session models.Sessions
+
+	err := sr.db.WithContext(ctx).
+		Where("session_id = ?", id).
+		First(session).Error
+
+	if err != nil {
+		return models.Sessions{}, err
+	}
+
+	return session, nil
+}
+
+func (sr *sessionRepository) DeleteByID(ctx context.Context, id string) error {
+	result := sr.db.WithContext(ctx).
+		Where("session_id = ?", id).
+		Delete(&models.Sessions{})
+
+	return result.Error
+}

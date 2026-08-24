@@ -109,3 +109,7 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 
 	return sessionID, nil
 }
+
+func (au *authUseCase) Logout(ctx context.Context, cookie string) error {
+	return au.sessionRepo.DeleteByID(ctx, cookie)
+}

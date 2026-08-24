@@ -8,4 +8,6 @@ import (
 
 type SessionRepository interface {
 	Create(c context.Context, sess *models.Sessions) error
+	GetByID(ctx context.Context, id string) (models.Sessions, error)
+	DeleteByID(ctx context.Context, id string) error
 }
