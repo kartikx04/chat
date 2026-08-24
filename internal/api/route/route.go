@@ -2,17 +2,28 @@ package route
 
 import (
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/kartikx04/chat/internal/api/controller"
+	"github.com/kartikx04/chat/internal/database"
 	"gorm.io/gorm"
 )
 
 // http method grouping and permissions
 
 func Register(timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logger) {
-	r.Get("/health", controller.Health)
+	r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
+		sqlDB, err := database.DB.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			slog.ErrorContext(req.Context(), "health: db unreachable")
+			http.Error(w, `{"status":"error","db":false}`, http.StatusServiceUnavailable)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+	})
 
 	NewAuthRouter(timeout, db, r, logger)
 	NewLogoutRouter(timeout, db, r, logger)
