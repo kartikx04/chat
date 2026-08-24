@@ -70,7 +70,7 @@ func runMigrations(dsn, dbName string) {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://../../internal/database/migrations",
+		"file://internal/database/migrations",
 		dbName,
 		driver,
 	)
