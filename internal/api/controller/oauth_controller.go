@@ -20,12 +20,11 @@ func init() {
 	}
 }
 
-type AuthController struct {
+type OAuthController struct {
 	AuthUseCase domain.AuthUseCase
 }
 
-func (ac *AuthController) GoogleSignOn(res http.ResponseWriter, req *http.Request) {
-
+func (ac *OAuthController) GoogleSignOn(res http.ResponseWriter, req *http.Request) {
 	state, authURL, err := ac.AuthUseCase.InitiateGoogleOAuth(req.Context())
 	if err != nil {
 		slog.WarnContext(req.Context(), "error signing in", "error", err)
@@ -46,7 +45,7 @@ func (ac *AuthController) GoogleSignOn(res http.ResponseWriter, req *http.Reques
 	http.Redirect(res, req, authURL, http.StatusTemporaryRedirect)
 }
 
-func (ac *AuthController) Callback(res http.ResponseWriter, req *http.Request) {
+func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) {
 	state := req.FormValue("state")
 	promptParam := req.URL.Query().Get("prompt")
 

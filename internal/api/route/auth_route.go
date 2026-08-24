@@ -15,7 +15,7 @@ import (
 func NewAuthRouter(timeout time.Duration, db *gorm.DB, r chi.Router, logger *slog.Logger) {
 	ur := repository.NewUserRepository(db, logger)
 	sr := repository.NewSessionRepository(db, logger)
-	lc := &controller.AuthController{
+	lc := &controller.OAuthController{
 		AuthUseCase: useCase.NewAuthUseCase(pkg.OAuthgolang, ur, sr, timeout),
 	}
 	r.Get("/auth/google-sso", lc.GoogleSignOn)
