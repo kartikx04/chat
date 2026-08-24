@@ -29,8 +29,8 @@ func (ac *OAuthController) GoogleSignOn(res http.ResponseWriter, req *http.Reque
 	if err != nil {
 		slog.WarnContext(req.Context(), "error signing in", "error", err)
 		http.Error(res, "internal server error", http.StatusBadRequest)
+		return
 	}
-
 	http.SetCookie(res, &http.Cookie{
 		Name:     "oauth_state",
 		Value:    state,
@@ -46,7 +46,7 @@ func (ac *OAuthController) GoogleSignOn(res http.ResponseWriter, req *http.Reque
 }
 
 func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) {
-	state := req.FormValue("state")
+	state := req.URL.Query().Get("state")
 	promptParam := req.URL.Query().Get("prompt")
 
 	stateCookie, err := req.Cookie("oauth_state")
@@ -76,7 +76,7 @@ func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) 
 		HttpOnly: true,
 	})
 
-	code := req.FormValue("code")
+	code := req.URL.Query().Get("code")
 	if code == "" {
 		slog.ErrorContext(req.Context(), "code not found in callback")
 		http.Error(res, "internal server error", http.StatusBadRequest)
@@ -94,6 +94,7 @@ func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) 
 		Name:     "session_id",
 		Value:    sessionID,
 		Path:     "/",
+		MaxAge:   72 * 60 * 60,
 		HttpOnly: true,
 		Secure:   pkg.LoadFile("ENV") == "production",
 		SameSite: http.SameSiteLaxMode,

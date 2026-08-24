@@ -13,8 +13,10 @@ import (
 
 func NewProfileRouter(timeout time.Duration, db *gorm.DB, r chi.Router, logger *slog.Logger) {
 	ur := repository.NewUserRepository(db, logger)
+	sr := repository.NewSessionRepository(db, logger)
 	dc := &controller.ProfileController{
 		ProfileUseCase: useCase.NewProfileUseCase(timeout, ur),
+		SessionRepo:    sr,
 	}
 	r.Get("/public/profile", dc.Profile)
 }

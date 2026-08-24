@@ -33,7 +33,7 @@ func (sr *sessionRepository) Create(ctx context.Context, session *models.Session
 
 	sr.logger.InfoContext(ctx,
 		"session created",
-		"id", session.ID,
+		"session_id", session.SessionID,
 		"user_id", session.UserID,
 	)
 
@@ -44,8 +44,22 @@ func (sr *sessionRepository) GetByID(ctx context.Context, id string) (models.Ses
 	var session models.Session
 
 	err := sr.db.WithContext(ctx).
-		Where("session_id = ?", id).
+		Where("id = ?", id).
 		First(session).Error
+
+	if err != nil {
+		return models.Session{}, err
+	}
+
+	return session, nil
+}
+
+func (sr *sessionRepository) GetBySessionID(ctx context.Context, id string) (models.Session, error) {
+	var session models.Session
+
+	err := sr.db.WithContext(ctx).
+		Where("session_id = ?", id).
+		First(&session).Error
 
 	if err != nil {
 		return models.Session{}, err

@@ -4,38 +4,39 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strings"
 
-	"github.com/kartikx04/chat/internal/auth"
 	"github.com/kartikx04/chat/internal/domain"
 )
 
 type ProfileController struct {
 	ProfileUseCase domain.ProfileUseCase
+	SessionRepo    domain.SessionRepository
 }
 
 func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request) {
-	authHeader := req.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		slog.WarnContext(req.Context(), "no auth header")
-		http.Error(res, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-	claims, err := auth.ValidateToken(tokenStr)
+	Cookie, err := req.Cookie("session_id")
 	if err != nil {
-		slog.WarnContext(req.Context(), "me: invalid token", "error", err)
-		http.Error(res, "unauthorized", http.StatusUnauthorized)
+		slog.Warn("error fetching cookie with value session_id", "error", err)
+		http.Redirect(res, req, "auth failed", http.StatusForbidden)
 		return
 	}
 
-	slog.DebugContext(req.Context(), "me: identity resolved",
-		"user_id", claims.UserID,
-		"username", claims.Username,
-	)
+	sessionID := Cookie.Value
+	session, err := pc.SessionRepo.GetBySessionID(req.Context(), sessionID)
+	if err != nil {
+		slog.Warn("error fetching session id from database", "error", err)
+		http.Redirect(res, req, "auth failed", http.StatusBadRequest)
+		return
+	}
 
-	profile, err := pc.ProfileUseCase.GetProfileByID(req.Context(), claims.UserID)
+	if session.SessionID != sessionID {
+		slog.Warn("session not found in database", "error", err)
+		http.Redirect(res, req, "auth failed", http.StatusBadRequest)
+		return
+	}
+	slog.Info("user session found and user authenticated")
+
+	profile, err := pc.ProfileUseCase.GetProfileByID(req.Context(), session.UserID.String())
 	if err != nil {
 		slog.WarnContext(req.Context(), "unable to fetch id")
 		http.Error(res, "internal server error", http.StatusInternalServerError)
