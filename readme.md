@@ -106,43 +106,17 @@ migrate -path internal/database/migrations \
   -database "postgres://postgres:password@localhost:5432/chat?sslmode=disable" force 1
 ```
 
-**Inside Docker**
-```bash
-docker exec -it chat_app sh scripts/migrate.sh up
-docker exec -it chat_app sh scripts/migrate.sh down 1
-docker exec -it chat_app sh scripts/migrate.sh version
-```
-
 ---
+### Delete Database
 
-## Useful Commands
-
-**Access containers**
 ```bash
-# App shell
-docker exec -it chat_app sh
-
-# Postgres shell
-docker exec -it chat_postgres psql -U postgres -d chat
+# allow script to be executable
+chmod +x scripts/reset-db-dev.sh
 ```
 
-**Test WebSocket manually**
 ```bash
-npm install -g wscat
-wscat -c ws://localhost:8080/ws
-```
-
-Open two terminals and paste:
-
-Terminal 1 (user 1)
-```json
-{"type":"bootup","user":"user1","user_id":"11111111-1111-1111-1111-111111111111"}
-{"type":"message","chat":{"from_id":"11111111-1111-1111-1111-111111111111","to_id":"22222222-2222-2222-2222-222222222222","message":"hello"}}
-```
-
-Terminal 2 (user 2)
-```json
-{"type":"bootup","user":"user2","user_id":"22222222-2222-2222-2222-222222222222"}
+# run the script
+./scripts/reset-db-dev.sh
 ```
 
 ---
@@ -152,10 +126,6 @@ Terminal 2 (user 2)
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/health` | Health check |
-| GET | `/google-sso` | Initiate Google OAuth |
+| GET | `/auth/google-sso` | Initiate Google OAuth |
 | GET | `/auth/google/callback` | OAuth callback |
-| GET | `/me` | Get current user from session |
-| GET | `/contacts?id=<uuid>` | Fetch contact list |
-| GET | `/chat-history?id=<uuid>&contact=<uuid>` | Fetch chat history |
-| POST | `/add-contact?id=<uuid>&contact=<username>` | Add a contact |
-| WS | `/ws` | WebSocket connection |
+| GET | `/auth/success` | Successful Login |
