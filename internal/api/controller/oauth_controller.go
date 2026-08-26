@@ -100,5 +100,5 @@ func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) 
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	http.Redirect(res, req, pkg.LoadFile("FRONTEND_URL")+"/home", http.StatusFound)
+	http.Redirect(res, req, "/auth/success", http.StatusSeeOther)
 }

@@ -25,6 +25,11 @@ func Register(timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logge
 		w.WriteHeader(http.StatusOK)
 	})
 
+	r.Get("/auth/success", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Login successful"))
+	})
+
 	NewAuthRouter(timeout, db, r, logger)
 	NewLogoutRouter(timeout, db, r, logger)
 	NewProfileRouter(timeout, db, r, logger)
