@@ -18,5 +18,5 @@ func NewLogoutRouter(timeout time.Duration, db *gorm.DB, r chi.Router, logger *s
 	dc := &controller.LogoutController{
 		AuthUseCase: useCase.NewAuthUseCase(pkg.OAuthgolang, ur, sr, timeout),
 	}
-	r.Get("/public/profile", dc.Logout)
+	r.Get("/auth/logout", dc.Logout)
 }
