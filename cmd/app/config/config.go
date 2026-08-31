@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"log/slog"
 
 	"github.com/caarlos0/env/v11"
@@ -44,7 +43,7 @@ func New() (*App, error) {
 	cfg := &App{}
 	err := env.Parse(cfg)
 	if err != nil {
-		log.Fatalf("Config error: %v", err)
+		return nil, err
 	}
 	slog.Info("config loaded")
 	return cfg, nil
