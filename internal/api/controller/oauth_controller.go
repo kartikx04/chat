@@ -4,17 +4,19 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/domain"
+
 	"github.com/kartikx04/chat/pkg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
-func init() {
+func InitOAuth(authCfg config.GoogleAuth) {
 	pkg.OAuthgolang = &oauth2.Config{
-		RedirectURL:  pkg.LoadFile("REDIRECT_URL"),
-		ClientID:     pkg.LoadFile("CLIENT_ID"),
-		ClientSecret: pkg.LoadFile("CLIENT_SECRET"),
+		RedirectURL:  authCfg.RedirectURL,
+		ClientID:     authCfg.ClientID,
+		ClientSecret: authCfg.ClientSecret,
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
 		Endpoint:     google.Endpoint,
 	}
@@ -22,6 +24,7 @@ func init() {
 
 type OAuthController struct {
 	AuthUseCase domain.AuthUseCase
+	Env         string
 }
 
 func (ac *OAuthController) GoogleSignOn(res http.ResponseWriter, req *http.Request) {
@@ -96,7 +99,7 @@ func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) 
 		Path:     "/",
 		MaxAge:   72 * 60 * 60,
 		HttpOnly: true,
-		Secure:   pkg.LoadFile("ENV") == "production",
+		Secure:   ac.Env == "production",
 		SameSite: http.SameSiteLaxMode,
 	})
 

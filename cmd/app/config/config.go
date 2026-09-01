@@ -7,13 +7,12 @@ import (
 )
 
 type App struct {
-	Database   database
-	Server     server
-	JWT        jwt
-	GoogleAuth googleAuth
+	Database   Database
+	Server     Server
+	GoogleAuth GoogleAuth
 }
 
-type database struct {
+type Database struct {
 	Host           string `env:"DB_HOST,required"`
 	Port           string `env:"DB_PORT,required"`
 	User           string `env:"DB_USER,required"`
@@ -23,16 +22,12 @@ type database struct {
 	ContextTimeout int    `env:"DB_CONTEXT_TIMEOUT" envDefault:"5"`
 }
 
-type server struct {
+type Server struct {
 	Port string `env:"SERVER_PORT,required"`
 	Env  string `env:"ENV" envDefault:"development"`
 }
 
-type jwt struct {
-	Secret string `env:"JWT_SECRET,required"`
-}
-
-type googleAuth struct {
+type GoogleAuth struct {
 	ClientID     string `env:"CLIENT_ID,required"`
 	ClientSecret string `env:"CLIENT_SECRET,required"`
 	RedirectURL  string `env:"REDIRECT_URL,required"`

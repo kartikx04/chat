@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/api/controller"
 	"github.com/kartikx04/chat/internal/repository"
 	useCase "github.com/kartikx04/chat/internal/usecase"
@@ -12,11 +13,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewLogoutRouter(timeout time.Duration, db *gorm.DB, r chi.Router, logger *slog.Logger) {
+func NewLogoutRouter(cfg *config.App, timeout time.Duration, db *gorm.DB, r chi.Router, logger *slog.Logger) {
 	ur := repository.NewUserRepository(db, logger)
 	sr := repository.NewSessionRepository(db, logger)
 	dc := &controller.LogoutController{
 		AuthUseCase: useCase.NewAuthUseCase(pkg.OAuthgolang, ur, sr, timeout),
+		Env:         cfg.Server.Env,
 	}
 	r.Get("/auth/logout", dc.Logout)
 }

@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/goombaio/namegenerator"
@@ -16,15 +15,6 @@ func init() {
 	} else {
 		slog.Info(".env file loaded")
 	}
-}
-
-func LoadFile(key string) string {
-	val := os.Getenv(key)
-	if val == "" {
-		slog.Error("missing required environment variable", "key", key)
-		os.Exit(1)
-	}
-	return val
 }
 
 func GenerateUniqueName() string {

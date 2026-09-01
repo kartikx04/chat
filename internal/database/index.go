@@ -12,7 +12,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/kartikx04/chat/cmd/app/config"
 	applogger "github.com/kartikx04/chat/internal/logger"
-	"github.com/kartikx04/chat/pkg"
 	_ "github.com/lib/pq"
 	gormpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,7 +19,7 @@ import (
 
 var DB *gorm.DB
 
-func Init(cfg *config.App) *gorm.DB {
+func Init(cfg *config.App) (*gorm.DB, error) {
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
@@ -31,18 +30,18 @@ func Init(cfg *config.App) *gorm.DB {
 	runMigrations(dsn, cfg.Database.DBName)
 
 	// Then open GORM connection for the app
-	env := pkg.LoadFile("ENV")
 	db, err := gorm.Open(gormpostgres.Open(dsn), &gorm.Config{
-		Logger: applogger.NewSlogGormLogger(env),
+		Logger: applogger.NewSlogGormLogger(cfg.Server.Env),
 	})
 	if err != nil {
 		slog.Error("db initialize error", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
+
 	sqlDB, err := db.DB()
 	if err != nil {
 		slog.Error("failed to get underlying sql.DB", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
 	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetMaxIdleConns(10)
@@ -51,7 +50,7 @@ func Init(cfg *config.App) *gorm.DB {
 
 	DB = db
 	slog.Info("database connected", "host", cfg.Database.Host, "name", cfg.Database.DBName)
-	return DB
+	return DB, nil
 }
 
 func runMigrations(dsn, dbName string) {

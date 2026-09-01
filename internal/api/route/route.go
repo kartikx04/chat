@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/database"
 	"gorm.io/gorm"
 )
 
 // http method grouping and permissions
 
-func Register(timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logger) {
+func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logger) {
 	r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
 		sqlDB, err := database.DB.DB()
 		if err != nil || sqlDB.Ping() != nil {
@@ -30,7 +31,7 @@ func Register(timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logge
 		w.Write([]byte("Login successful"))
 	})
 
-	NewAuthRouter(timeout, db, r, logger)
-	NewLogoutRouter(timeout, db, r, logger)
-	NewProfileRouter(timeout, db, r, logger)
+	NewAuthRouter(cfg, timeout, db, r, logger)
+	NewLogoutRouter(cfg, timeout, db, r, logger)
+	NewProfileRouter(cfg, timeout, db, r, logger)
 }

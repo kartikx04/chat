@@ -5,14 +5,14 @@ import (
 	"net/http"
 
 	"github.com/kartikx04/chat/internal/domain"
-	"github.com/kartikx04/chat/pkg"
 )
 
 type LogoutController struct {
 	AuthUseCase domain.AuthUseCase
+	Env         string
 }
 
-func (ac *LogoutController) Logout(res http.ResponseWriter, req *http.Request) {
+func (lc *LogoutController) Logout(res http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("session_id")
 	if err != nil {
 		slog.InfoContext(req.Context(), "logout requested without session")
@@ -20,7 +20,7 @@ func (ac *LogoutController) Logout(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ac.AuthUseCase.Logout(req.Context(), cookie.Value)
+	err = lc.AuthUseCase.Logout(req.Context(), cookie.Value)
 	if err != nil {
 		slog.ErrorContext(req.Context(), "failed to logout", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
@@ -33,7 +33,7 @@ func (ac *LogoutController) Logout(res http.ResponseWriter, req *http.Request) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   pkg.LoadFile("ENV") == "production",
+		Secure:   lc.Env == "production",
 		SameSite: http.SameSiteLaxMode,
 	})
 	slog.InfoContext(req.Context(), "user logged out")
