@@ -1,4 +1,6 @@
 .env
+.env.test
+.env.dev
 client_secret_841914283368-i4ip51kl8mg0pcks8a5ruunsvp27g30q.apps.googleusercontent.com.json
 personal.txt
 tmp/

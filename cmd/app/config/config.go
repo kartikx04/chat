@@ -31,15 +31,17 @@ type GoogleAuth struct {
 	ClientID     string `env:"CLIENT_ID,required"`
 	ClientSecret string `env:"CLIENT_SECRET,required"`
 	RedirectURL  string `env:"REDIRECT_URL,required"`
-	TokenSecret  string `env:"TOKEN_SECRET,required"`
 }
 
 func New() (*App, error) {
+	LoadEnv()
+
 	cfg := &App{}
 	err := env.Parse(cfg)
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("config loaded")
+
 	return cfg, nil
 }
