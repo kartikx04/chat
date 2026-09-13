@@ -21,7 +21,7 @@ func LoadEnv() {
 		filename = ".env"
 	case "integration-test":
 		slog.Info("Running in Test mode.")
-		filename = ".env.test"
+		filename = "../.env.test"
 	default:
 		slog.Warn("No matching APPENV found. Proceeding with system environment variables only.", "APPENV", appEnv)
 		return

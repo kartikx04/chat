@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -68,8 +69,15 @@ func runMigrations(dsn, dbName string) {
 		os.Exit(1)
 	}
 
+	// normal path
+	migrationsPath := "file://internal/database/migrations"
+	if flag.Lookup("test.v") != nil || flag.Lookup("test.run") != nil {
+		// test path
+		migrationsPath = "file://../internal/database/migrations"
+	}
+
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/database/migrations",
+		migrationsPath,
 		dbName,
 		driver,
 	)
