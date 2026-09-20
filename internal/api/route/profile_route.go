@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/api/controller"
 	"github.com/kartikx04/chat/internal/repository"
@@ -12,12 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewProfileRouter(cfg *config.App, timeout time.Duration, db *gorm.DB, r chi.Router, logger *slog.Logger) {
+func NewProfileHandler(cfg *config.App, timeout time.Duration, db *gorm.DB, logger *slog.Logger) *controller.ProfileController {
 	ur := repository.NewUserRepository(db, logger)
 	sr := repository.NewSessionRepository(db, logger)
-	dc := &controller.ProfileController{
+	return &controller.ProfileController{
 		ProfileUseCase: useCase.NewProfileUseCase(timeout, ur),
 		SessionRepo:    sr,
 	}
-	r.Get("/public/profile", dc.Profile)
 }
