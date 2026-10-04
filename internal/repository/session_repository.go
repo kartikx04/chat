@@ -45,7 +45,7 @@ func (sr *sessionRepository) GetByID(ctx context.Context, id string) (models.Ses
 
 	err := sr.db.WithContext(ctx).
 		Where("id = ?", id).
-		First(session).Error
+		First(&session).Error
 
 	if err != nil {
 		return models.Session{}, err

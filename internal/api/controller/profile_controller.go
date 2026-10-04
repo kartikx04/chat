@@ -39,7 +39,8 @@ func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request)
 	profile, err := pc.ProfileUseCase.GetProfileByID(req.Context(), session.UserID.String())
 	if err != nil {
 		slog.WarnContext(req.Context(), "unable to fetch id")
-		http.Error(res, "internal server error", http.StatusInternalServerError)
+		http.Error(res, "auth failed", http.StatusBadRequest)
+		return
 	}
 
 	res.Header().Set("Content-Type", "application/json")

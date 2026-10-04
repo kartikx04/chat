@@ -47,6 +47,6 @@ func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, l
 		r.Use(middleware.Auth(sessionRepo))
 
 		r.Post("/logout", logoutHandler.Logout)
-		r.Get("/profile", profileHandler.Profile)
+		r.Get("/public/profile", profileHandler.Profile)
 	})
 }
