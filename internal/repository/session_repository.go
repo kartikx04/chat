@@ -33,7 +33,7 @@ func (sr *sessionRepository) Create(ctx context.Context, session *models.Session
 
 	sr.logger.InfoContext(ctx,
 		"session created",
-		"session_id", session.SessionID,
+		"token", session.Token,
 		"user_id", session.UserID,
 	)
 
@@ -54,11 +54,11 @@ func (sr *sessionRepository) GetByID(ctx context.Context, id string) (models.Ses
 	return session, nil
 }
 
-func (sr *sessionRepository) GetBySessionID(ctx context.Context, id string) (models.Session, error) {
+func (sr *sessionRepository) FindByToken(ctx context.Context, id string) (models.Session, error) {
 	var session models.Session
 
 	err := sr.db.WithContext(ctx).
-		Where("session_id = ?", id).
+		Where("token = ?", id).
 		First(&session).Error
 
 	if err != nil {
@@ -68,9 +68,9 @@ func (sr *sessionRepository) GetBySessionID(ctx context.Context, id string) (mod
 	return session, nil
 }
 
-func (sr *sessionRepository) DeleteByID(ctx context.Context, id string) error {
+func (sr *sessionRepository) DeleteByToken(ctx context.Context, id string) error {
 	result := sr.db.WithContext(ctx).
-		Where("session_id = ?", id).
+		Where("token = ?", id).
 		Delete(&models.Session{})
 
 	return result.Error

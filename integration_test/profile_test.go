@@ -38,30 +38,31 @@ func TestProfile(t *testing.T) {
 	err := userRepo.Create(app.Context, &user)
 	require.NoError(t, err)
 
-	sessionID := "test-session-123"
+	token := "test-session-token-123"
 
 	session := models.Session{
 		ID:         uuid.New(),
-		SessionID:  sessionID,
+		Token:      token,
 		UserID:     userID,
 		ExpiresAt:  time.Now().Add(72 * time.Hour),
 		CreatedAt:  time.Now(),
 		LastUsedAt: time.Now(),
 	}
 
-	err = app.TestDB.Create(&session).Error
+	sessionRepo := repository.NewSessionRepository(app.TestDB, app.Logger)
+	err = sessionRepo.Create(app.Context, &session)
 	require.NoError(t, err)
 
 	// Act
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/public/profile",
+		"/v1/users/me",
 		nil,
 	)
 
 	req.AddCookie(&http.Cookie{
 		Name:  "session_id",
-		Value: sessionID,
+		Value: token,
 	})
 
 	rec := httptest.NewRecorder()

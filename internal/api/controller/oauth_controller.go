@@ -27,7 +27,7 @@ type OAuthController struct {
 	Env         string
 }
 
-func (ac *OAuthController) GoogleSignOn(res http.ResponseWriter, req *http.Request) {
+func (ac *OAuthController) StartGoogleOAuth(res http.ResponseWriter, req *http.Request) {
 	state, authURL, err := ac.AuthUseCase.InitiateGoogleOAuth(req.Context())
 	if err != nil {
 		slog.WarnContext(req.Context(), "error signing in", "error", err)
@@ -48,7 +48,7 @@ func (ac *OAuthController) GoogleSignOn(res http.ResponseWriter, req *http.Reque
 	http.Redirect(res, req, authURL, http.StatusTemporaryRedirect)
 }
 
-func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) {
+func (ac *OAuthController) CompleteGoogleOAuth(res http.ResponseWriter, req *http.Request) {
 	state := req.URL.Query().Get("state")
 	promptParam := req.URL.Query().Get("prompt")
 
@@ -86,7 +86,7 @@ func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	sessionID, err := ac.AuthUseCase.FinaliseGoogleAuth(req.Context(), code)
+	token, err := ac.AuthUseCase.CompleteGoogleOAuth(req.Context(), code)
 	if err != nil {
 		slog.ErrorContext(req.Context(), "failed to finalize google auth", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
@@ -95,7 +95,7 @@ func (ac *OAuthController) Callback(res http.ResponseWriter, req *http.Request) 
 
 	http.SetCookie(res, &http.Cookie{
 		Name:     "session_id",
-		Value:    sessionID,
+		Value:    token,
 		Path:     "/",
 		MaxAge:   72 * 60 * 60,
 		HttpOnly: true,

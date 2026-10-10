@@ -16,9 +16,9 @@ import (
 // http method grouping and permissions
 
 func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logger) {
-	authHandler := NewAuthHandler(cfg, timeout, db, logger)
-	profileHandler := NewProfileHandler(cfg, timeout, db, logger)
-	logoutHandler := NewLogoutHandler(cfg, timeout, db, logger)
+	authHandler := NewOAuthController(cfg, timeout, db, logger)
+	profileHandler := NewProfileController(cfg, timeout, db, logger)
+	logoutHandler := NewLogoutController(cfg, timeout, db, logger)
 	sessionRepo := repository.NewSessionRepository(db, logger)
 
 	// public
@@ -39,14 +39,14 @@ func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, l
 		w.WriteHeader(http.StatusOK)
 	})
 
-	r.Get("/auth/google-sso", authHandler.GoogleSignOn)
-	r.Get("/auth/google/callback", authHandler.Callback)
+	r.Get("/auth/google-sso", authHandler.StartGoogleOAuth)
+	r.Get("/auth/google/callback", authHandler.CompleteGoogleOAuth)
 
 	// protected
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Auth(sessionRepo))
 
 		r.Post("/logout", logoutHandler.Logout)
-		r.Get("/public/profile", profileHandler.Profile)
+		r.Get("/v1/users/me", profileHandler.Profile)
 	})
 }

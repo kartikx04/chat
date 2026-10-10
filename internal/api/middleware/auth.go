@@ -19,10 +19,10 @@ func Auth(sessionRepo domain.SessionRepository) func(http.Handler) http.Handler 
 				return
 			}
 
-			sessionID := Cookie.Value
-			session, err := sessionRepo.GetBySessionID(req.Context(), sessionID)
+			token := Cookie.Value
+			session, err := sessionRepo.FindByToken(req.Context(), token)
 			if err != nil {
-				slog.WarnContext(req.Context(), "error fetching session id from database", "error", err)
+				slog.WarnContext(req.Context(), "error fetching token from session", "error", err)
 				http.Redirect(res, req, "Unauthorized", http.StatusUnauthorized)
 				return
 			}

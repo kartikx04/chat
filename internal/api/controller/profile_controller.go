@@ -21,15 +21,15 @@ func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	sessionID := Cookie.Value
-	session, err := pc.SessionRepo.GetBySessionID(req.Context(), sessionID)
+	token := Cookie.Value
+	session, err := pc.SessionRepo.FindByToken(req.Context(), token)
 	if err != nil {
 		slog.Warn("error fetching session id from database", "error", err)
 		http.Redirect(res, req, "auth failed", http.StatusBadRequest)
 		return
 	}
 
-	if session.SessionID != sessionID {
+	if session.Token != token {
 		slog.Warn("session not found in database", "error", err)
 		http.Redirect(res, req, "auth failed", http.StatusBadRequest)
 		return

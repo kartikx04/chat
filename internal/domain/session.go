@@ -9,6 +9,6 @@ import (
 type SessionRepository interface {
 	Create(c context.Context, sess *models.Session) error
 	GetByID(ctx context.Context, id string) (models.Session, error)
-	GetBySessionID(ctx context.Context, id string) (models.Session, error)
-	DeleteByID(ctx context.Context, id string) error
+	FindByToken(ctx context.Context, id string) (models.Session, error)
+	DeleteByToken(ctx context.Context, id string) error
 }

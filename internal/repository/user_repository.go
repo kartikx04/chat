@@ -41,12 +41,12 @@ func (ur *userRepository) Create(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-func (ur *userRepository) Fetch(ctx context.Context) ([]models.User, error) {
+func (ur *userRepository) List(ctx context.Context) ([]models.User, error) {
 	var users []models.User
 
 	if err := ur.db.WithContext(ctx).Find(&users).Error; err != nil {
 		ur.logger.ErrorContext(ctx,
-			"failed to fetch users",
+			"failed to list users",
 			"error", err,
 		)
 		return nil, err

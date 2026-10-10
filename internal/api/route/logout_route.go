@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewLogoutHandler(cfg *config.App, timeout time.Duration, db *gorm.DB, logger *slog.Logger) *controller.LogoutController {
+func NewLogoutController(cfg *config.App, timeout time.Duration, db *gorm.DB, logger *slog.Logger) *controller.LogoutController {
 	ur := repository.NewUserRepository(db, logger)
 	sr := repository.NewSessionRepository(db, logger)
 	return &controller.LogoutController{

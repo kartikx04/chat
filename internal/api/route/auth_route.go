@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewAuthHandler(cfg *config.App, timeout time.Duration, db *gorm.DB, logger *slog.Logger) *controller.OAuthController {
+func NewOAuthController(cfg *config.App, timeout time.Duration, db *gorm.DB, logger *slog.Logger) *controller.OAuthController {
 	controller.InitOAuth(cfg.GoogleAuth)
 
 	ur := repository.NewUserRepository(db, logger)

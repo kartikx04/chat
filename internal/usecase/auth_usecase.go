@@ -1,4 +1,4 @@
-package useCase
+package usecase
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func (au *authUseCase) InitiateGoogleOAuth(ctx context.Context) (string, string,
 	return state, authURL, nil
 }
 
-func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (string, error) {
+func (au *authUseCase) CompleteGoogleOAuth(ctx context.Context, code string) (string, error) {
 	token, err := au.oauthConfig.Exchange(ctx, code)
 	if err != nil {
 		return "", err
@@ -94,10 +94,10 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 		}
 	}
 
-	sessionID := pkg.GenerateSecureID()
+	sessionToken := pkg.GenerateSecureID()
 	session := models.Session{
 		ID:         uuid.New(),
-		SessionID:  sessionID,
+		Token:      sessionToken,
 		UserID:     user.ID,
 		ExpiresAt:  time.Now().Add(72 * time.Hour),
 		CreatedAt:  time.Now(),
@@ -107,9 +107,9 @@ func (au *authUseCase) FinaliseGoogleAuth(ctx context.Context, code string) (str
 		return "", err
 	}
 
-	return sessionID, nil
+	return sessionToken, nil
 }
 
 func (au *authUseCase) Logout(ctx context.Context, cookie string) error {
-	return au.sessionRepo.DeleteByID(ctx, cookie)
+	return au.sessionRepo.DeleteByToken(ctx, cookie)
 }

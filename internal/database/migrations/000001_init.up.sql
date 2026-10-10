@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY,
-    session_id TEXT UNIQUE NOT NULL,
+    token TEXT UNIQUE NOT NULL,
     user_id UUID NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL,
