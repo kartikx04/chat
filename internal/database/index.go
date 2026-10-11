@@ -28,6 +28,10 @@ func Init(cfg *config.App) (*gorm.DB, error) {
 
 	// Run migrations first using raw sql.DB
 	err := runMigrations(dsn, cfg.Database.DBName)
+	if err := runMigrations(dsn, cfg.Database.DBName); err != nil {
+		slog.Error("error running migration", "error", err)
+		return nil, fmt.Errorf("run migrations for database %q: %w", cfg.Database.DBName, err)
+	}
 
 	// Then open GORM connection for the app
 	db, err := gorm.Open(gormpostgres.Open(dsn), &gorm.Config{
@@ -35,13 +39,13 @@ func Init(cfg *config.App) (*gorm.DB, error) {
 	})
 	if err != nil {
 		slog.Error("db initialize error", "error", err)
-		return nil, err
+		return nil, fmt.Errorf("open gorm connection for database %q: %w", cfg.Database.DBName, err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
 		slog.Error("failed to get underlying sql.DB", "error", err)
-		return nil, err
+		return nil, fmt.Errorf("return sql db for database %q: %w", cfg.Database.DBName, err)
 	}
 	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetMaxIdleConns(10)
@@ -58,14 +62,14 @@ func runMigrations(dsn, dbName string) error {
 	sqlDB, err := sql.Open("postgres", dsn)
 	if err != nil {
 		slog.Error("failed to open db for migrations", "error", err)
-		return fmt.Errorf("error: %s", err)
+		return fmt.Errorf("open database connection: %w", err)
 	}
 	defer sqlDB.Close()
 
 	driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
 	if err != nil {
 		slog.Error("failed to create migration driver", "error", err)
-		return fmt.Errorf("error: %s", err)
+		return fmt.Errorf("create postgres migration driver: %w", err)
 	}
 
 	// normal path
@@ -82,20 +86,18 @@ func runMigrations(dsn, dbName string) error {
 	)
 	if err != nil {
 		slog.Error("failed to create migrator", "error", err)
-		return fmt.Errorf("error: %s", err)
+		return fmt.Errorf("load migrations from %q: %w", migrationsPath, err)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		slog.Error("migration failed", "error", err)
-		return fmt.Errorf("error: %s", err)
+		return fmt.Errorf("apply migrations: %w", err)
 	}
 
 	version, dirty, _ := m.Version()
 	if dirty {
-		slog.Error("database is in dirty migration state — manual fix required",
-			"version", version,
-		)
-		return fmt.Errorf("error: dirty migration state")
+		slog.Error("database is in dirty migration state — manual fix required", "version", version)
+		return fmt.Errorf("read migration version: %w", err)
 	}
 
 	slog.Info("migrations applied", "version", version)
