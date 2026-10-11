@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/kartikx04/chat/internal/domain"
+	"github.com/kartikx04/chat/pkg"
 )
 
 type ProfileController struct {
@@ -14,29 +15,14 @@ type ProfileController struct {
 }
 
 func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request) {
-	Cookie, err := req.Cookie("session_id")
-	if err != nil {
-		slog.Warn("error fetching cookie with value session_id", "error", err)
-		http.Redirect(res, req, "auth failed", http.StatusForbidden)
+	userID, ok := pkg.GetUserID(req.Context())
+	if !ok {
+		slog.WarnContext(req.Context(), "unable to fetch user id from context")
+		http.Error(res, "auth failed", http.StatusBadRequest)
 		return
 	}
 
-	token := Cookie.Value
-	session, err := pc.SessionRepo.FindByToken(req.Context(), token)
-	if err != nil {
-		slog.Warn("error fetching session id from database", "error", err)
-		http.Redirect(res, req, "auth failed", http.StatusBadRequest)
-		return
-	}
-
-	if session.Token != token {
-		slog.Warn("session not found in database", "error", err)
-		http.Redirect(res, req, "auth failed", http.StatusBadRequest)
-		return
-	}
-	slog.Info("user session found and user authenticated")
-
-	profile, err := pc.ProfileUseCase.GetProfileByID(req.Context(), session.UserID.String())
+	profile, err := pc.ProfileUseCase.GetProfileByID(req.Context(), userID)
 	if err != nil {
 		slog.WarnContext(req.Context(), "unable to fetch id")
 		http.Error(res, "auth failed", http.StatusBadRequest)

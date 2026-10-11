@@ -27,6 +27,8 @@ func Auth(sessionRepo domain.SessionRepository) func(http.Handler) http.Handler 
 				return
 			}
 
+			slog.Info("user session found and user authenticated")
+
 			if time.Now().After(session.ExpiresAt) {
 				slog.WarnContext(req.Context(), "authentication failed: session expired")
 				http.Error(res, "unauthorized", http.StatusUnauthorized)
