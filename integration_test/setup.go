@@ -2,6 +2,7 @@ package integrationtest
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"testing"
 	"time"
@@ -29,6 +30,10 @@ func Setup(t *testing.T) *TestApp {
 	cfg, err := config.New()
 	if err != nil {
 		t.Fatalf("failed to parse env variables: %v", err)
+	}
+
+	if err := validateTestConfig(cfg); err != nil {
+		t.Fatal(err)
 	}
 
 	logger := applogger.Init(cfg.Server.Env)
@@ -93,4 +98,21 @@ func Setup(t *testing.T) *TestApp {
 	})
 
 	return app
+}
+
+func validateTestConfig(cfg *config.App) error {
+	// Replace these with your actual config fields.
+	if cfg.Server.Env != "integration-test" {
+		return fmt.Errorf(
+			"integration tests require APPENV=integration-test",
+		)
+	}
+
+	if cfg.Database.DBName != "chat_test" {
+		return fmt.Errorf(
+			"integration tests require DB_NAME=chat_test",
+		)
+	}
+
+	return nil
 }
