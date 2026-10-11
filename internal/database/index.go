@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -28,7 +27,7 @@ func Init(cfg *config.App) (*gorm.DB, error) {
 	)
 
 	// Run migrations first using raw sql.DB
-	runMigrations(dsn, cfg.Database.DBName)
+	err := runMigrations(dsn, cfg.Database.DBName)
 
 	// Then open GORM connection for the app
 	db, err := gorm.Open(gormpostgres.Open(dsn), &gorm.Config{
@@ -54,19 +53,19 @@ func Init(cfg *config.App) (*gorm.DB, error) {
 	return DB, nil
 }
 
-func runMigrations(dsn, dbName string) {
+func runMigrations(dsn, dbName string) error {
 	// golang-migrate needs a *sql.DB, not GORM
 	sqlDB, err := sql.Open("postgres", dsn)
 	if err != nil {
 		slog.Error("failed to open db for migrations", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("error: %s", err)
 	}
 	defer sqlDB.Close()
 
 	driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
 	if err != nil {
 		slog.Error("failed to create migration driver", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("error: %s", err)
 	}
 
 	// normal path
@@ -83,12 +82,12 @@ func runMigrations(dsn, dbName string) {
 	)
 	if err != nil {
 		slog.Error("failed to create migrator", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("error: %s", err)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		slog.Error("migration failed", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("error: %s", err)
 	}
 
 	version, dirty, _ := m.Version()
@@ -96,8 +95,10 @@ func runMigrations(dsn, dbName string) {
 		slog.Error("database is in dirty migration state — manual fix required",
 			"version", version,
 		)
-		os.Exit(1)
+		return fmt.Errorf("error: dirty migration state")
 	}
 
 	slog.Info("migrations applied", "version", version)
+
+	return nil
 }

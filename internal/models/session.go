@@ -9,7 +9,7 @@ import (
 type Session struct {
 	ID         uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	Token      string    `gorm:"unique" json:"token"`
-	UserID     uuid.UUID `gorm:"unique" json:"user_id"`
+	UserID     uuid.UUID `json:"user_id"`
 	ExpiresAt  time.Time `json:"expires_at"`
 	CreatedAt  time.Time `json:"created_at"`
 	LastUsedAt time.Time `json:"last_used_at"`
