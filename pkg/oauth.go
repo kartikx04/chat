@@ -11,8 +11,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var OAuthgolang *oauth2.Config
-
 const (
 	tokenSet    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	tokenLength = 15
@@ -51,6 +49,7 @@ func GetUserData(state, code, tokenCode string) ([]byte, error) {
 	}
 
 	// converts authorization code into a token
+	OAuthgolang := &oauth2.Config{}
 	token, err := OAuthgolang.Exchange(context.Background(), code)
 	if err != nil {
 		return nil, err

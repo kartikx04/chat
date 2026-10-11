@@ -4,23 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/domain"
-
-	"github.com/kartikx04/chat/pkg"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
-
-func InitOAuth(authCfg config.GoogleAuth) {
-	pkg.OAuthgolang = &oauth2.Config{
-		RedirectURL:  authCfg.RedirectURL,
-		ClientID:     authCfg.ClientID,
-		ClientSecret: authCfg.ClientSecret,
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint:     google.Endpoint,
-	}
-}
 
 type OAuthController struct {
 	AuthUseCase domain.AuthUseCase

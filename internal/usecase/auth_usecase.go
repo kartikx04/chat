@@ -46,7 +46,7 @@ func (au *authUseCase) InitiateGoogleOAuth(ctx context.Context) (string, string,
 		return "", "", err
 	}
 
-	authURL := pkg.OAuthgolang.AuthCodeURL(state)
+	authURL := au.oauthConfig.AuthCodeURL(state)
 	slog.InfoContext(ctx, "oauth redirect initiated")
 	return state, authURL, nil
 }

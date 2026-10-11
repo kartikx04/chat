@@ -10,15 +10,16 @@ import (
 	"github.com/kartikx04/chat/internal/api/middleware"
 	"github.com/kartikx04/chat/internal/database"
 	"github.com/kartikx04/chat/internal/repository"
+	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
 
 // http method grouping and permissions
 
-func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logger) {
-	authHandler := NewOAuthController(cfg, timeout, db, logger)
+func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logger, oauthConfig *oauth2.Config) {
+	oauthHandler := NewOAuthController(cfg, timeout, db, logger, oauthConfig)
 	profileHandler := NewProfileController(cfg, timeout, db, logger)
-	logoutHandler := NewLogoutController(cfg, timeout, db, logger)
+	logoutHandler := NewLogoutController(cfg, timeout, db, logger, oauthConfig)
 	sessionRepo := repository.NewSessionRepository(db, logger)
 
 	// public
@@ -39,8 +40,8 @@ func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, l
 		w.WriteHeader(http.StatusOK)
 	})
 
-	r.Get("/auth/google-sso", authHandler.StartGoogleOAuth)
-	r.Get("/auth/google/callback", authHandler.CompleteGoogleOAuth)
+	r.Get("/auth/google-sso", oauthHandler.StartGoogleOAuth)
+	r.Get("/auth/google/callback", oauthHandler.CompleteGoogleOAuth)
 
 	// protected
 	r.Group(func(r chi.Router) {

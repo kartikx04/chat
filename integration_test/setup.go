@@ -11,6 +11,8 @@ import (
 	"github.com/kartikx04/chat/internal/api/route"
 	"github.com/kartikx04/chat/internal/database"
 	applogger "github.com/kartikx04/chat/internal/logger"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
 )
 
@@ -39,7 +41,16 @@ func Setup(t *testing.T) *TestApp {
 	router := chi.NewRouter()
 
 	timeout := 3 * time.Second
-	route.Register(cfg, timeout, testDB, router, logger)
+
+	oauthConfig := &oauth2.Config{
+		RedirectURL:  cfg.GoogleAuth.RedirectURL,
+		ClientID:     cfg.GoogleAuth.ClientID,
+		ClientSecret: cfg.GoogleAuth.ClientSecret,
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+		Endpoint:     google.Endpoint,
+	}
+
+	route.Register(cfg, timeout, testDB, router, logger, oauthConfig)
 
 	app := &TestApp{
 		Config:  cfg,
