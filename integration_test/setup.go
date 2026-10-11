@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"testing"
 	"time"
 
@@ -29,18 +30,18 @@ func Setup(t *testing.T) *TestApp {
 	t.Helper()
 	cfg, err := config.New()
 	if err != nil {
-		t.Fatalf("failed to parse env variables: %v", err)
+		t.Fatalf("load integration-test configuration: %v", err)
 	}
 
 	if err := validateTestConfig(cfg); err != nil {
-		t.Fatal(err)
+		t.Fatalf("refusing to run destructive integration-test setup: %v", err)
 	}
 
 	logger := applogger.Init(cfg.Server.Env)
 
 	testDB, err := database.Init(cfg)
 	if err != nil {
-		t.Fatalf("failed to initialise database: %v", err)
+		t.Fatalf("initialize integration database %q at %s:%s: %v", cfg.Database.DBName, cfg.Database.Host, cfg.Database.Port, err)
 	}
 
 	router := chi.NewRouter()
@@ -68,9 +69,15 @@ func Setup(t *testing.T) *TestApp {
 	t.Cleanup(func() {
 		sqlDB, err := testDB.DB()
 		if err != nil {
-			t.Logf("failed to get sql DB: %v", err)
+			t.Errorf("integration-test cleanup: get database handle for %q: %v", cfg.Database.DBName, err)
 			return
 		}
+
+		defer func() {
+			if err := sqlDB.Close(); err != nil {
+				t.Errorf("integration-test cleanup: close database %q: %v", cfg.Database.DBName, err)
+			}
+		}()
 
 		query := `
             DO $$
@@ -91,27 +98,24 @@ func Setup(t *testing.T) *TestApp {
         `
 
 		if _, err := sqlDB.Exec(query); err != nil {
-			t.Logf("failed to clean database: %v", err)
+			t.Errorf("integration-test cleanup: truncate tables in %q: %v", cfg.Database.DBName, err)
 		}
-
-		sqlDB.Close()
 	})
 
 	return app
 }
 
 func validateTestConfig(cfg *config.App) error {
-	// Replace these with your actual config fields.
+	if appEnv := os.Getenv("APPENV"); appEnv != "integration-test" {
+		return fmt.Errorf("APPENV must be %q, got %q", "integration-test", appEnv)
+	}
+
 	if cfg.Server.Env != "integration-test" {
-		return fmt.Errorf(
-			"integration tests require APPENV=integration-test",
-		)
+		return fmt.Errorf("integration tests require APPENV=integration-test")
 	}
 
 	if cfg.Database.DBName != "chat_test" {
-		return fmt.Errorf(
-			"integration tests require DB_NAME=chat_test",
-		)
+		return fmt.Errorf("integration tests require DB_NAME=chat_test")
 	}
 
 	return nil
