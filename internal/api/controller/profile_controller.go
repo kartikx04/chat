@@ -11,7 +11,6 @@ import (
 
 type ProfileController struct {
 	ProfileUseCase domain.ProfileUseCase
-	SessionRepo    domain.SessionRepository
 }
 
 func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request) {
