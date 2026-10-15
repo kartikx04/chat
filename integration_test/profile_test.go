@@ -12,11 +12,11 @@ import (
 	"github.com/kartikx04/chat/internal/domain"
 	"github.com/kartikx04/chat/internal/models"
 	"github.com/kartikx04/chat/internal/repository"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestProfile(t *testing.T) {
+	var err error
+
 	app := Setup(t)
 
 	userID := uuid.New()
@@ -35,8 +35,10 @@ func TestProfile(t *testing.T) {
 
 	userRepo := repository.NewUserRepository(app.TestDB, app.Logger)
 
-	err := userRepo.Create(app.Context, &user)
-	require.NoError(t, err)
+	err = userRepo.Create(app.Context, &user)
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
 
 	token := "test-session-token-123"
 
@@ -51,14 +53,11 @@ func TestProfile(t *testing.T) {
 
 	sessionRepo := repository.NewSessionRepository(app.TestDB, app.Logger)
 	err = sessionRepo.Create(app.Context, &session)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("create session: %v", err)
+	}
 
-	// Act
-	req := httptest.NewRequest(
-		http.MethodGet,
-		"/v1/users/me",
-		nil,
-	)
+	req := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
 
 	req.AddCookie(&http.Cookie{
 		Name:  "session_id",
@@ -69,20 +68,25 @@ func TestProfile(t *testing.T) {
 
 	app.Router.ServeHTTP(rec, req)
 
-	// Assert
-	assert.Equal(t, http.StatusOK, rec.Code)
+	if got, want := rec.Code, http.StatusOK; got != want {
+		t.Errorf("want %v, got: %v", want, got)
+	}
 
-	assert.Equal(
-		t,
-		"application/json",
-		rec.Header().Get("Content-Type"),
-	)
+	if got, want := rec.Header().Get("Content-Type"), "application/json"; got != want {
+		t.Errorf("wanted content type: %v, got: %v", want, got)
+	}
 
 	var profile domain.Profile
 
 	err = json.NewDecoder(rec.Body).Decode(&profile)
-	require.NoError(t, err)
+	if err != nil {
+		t.Errorf("decode body: %v", err)
+	}
 
-	assert.Equal(t, "Kartik", profile.Name)
-	assert.Equal(t, "kartik@example.com", profile.Email)
+	if got, want := profile.Name, "Kartik"; got != want {
+		t.Errorf("user name = %v, want %v", got, want)
+	}
+	if got, want := profile.Email, "kartik@example.com"; got != want {
+		t.Errorf("user email = %v want %v", got, want)
+	}
 }
