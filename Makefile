@@ -15,8 +15,10 @@ prod:
 
 ## test: Run integration tests (.test.env)
 test:
-	@echo "🧪 Running INTEGRATION TESTS..."
-	APPENV=integration-test go test ./... -v
+	@echo ""
+	@echo "🧪 Running tests..."
+	@echo ""
+	@bash scripts/test.sh
 
 ## help: Show this help message
 help:
