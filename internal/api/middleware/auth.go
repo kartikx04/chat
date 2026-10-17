@@ -1,25 +1,30 @@
 package middleware
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/kartikx04/chat/internal/domain"
+	"github.com/kartikx04/chat/internal/models"
 	"github.com/kartikx04/chat/pkg"
 )
 
-func Auth(sessionRepo domain.SessionRepository) func(http.Handler) http.Handler {
+type sessionFinder interface {
+	FindByToken(ctx context.Context, token string) (models.Session, error)
+}
+
+func Auth(sessionRepo sessionFinder) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			Cookie, err := req.Cookie("session_id")
+			cookie, err := req.Cookie("session_id")
 			if err != nil {
 				slog.WarnContext(req.Context(), "error fetching cookie with value session_id", "error", err)
 				http.Redirect(res, req, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
 
-			token := Cookie.Value
+			token := cookie.Value
 			session, err := sessionRepo.FindByToken(req.Context(), token)
 			if err != nil {
 				slog.WarnContext(req.Context(), "error fetching token from session", "error", err)
