@@ -24,7 +24,7 @@ func (f *fakeSessionFinder) FindByToken(_ context.Context, token string) (models
 	f.gotToken = token
 	f.calls += 1
 
-	return f.session, nil
+	return f.session, f.err
 }
 
 func TestAuth(t *testing.T) {
@@ -66,11 +66,11 @@ func TestAuth(t *testing.T) {
 		}
 
 		if !nextHandlerCalled {
-			t.Errorf("next handler was not called")
+			t.Error("next handler was not called")
 		}
 
 		if !contextGotUserID {
-			t.Errorf("user ID was not added to context")
+			t.Error("user ID was not added to context")
 		}
 
 		if got, want := gotUserID, wantUserID; got != want {
