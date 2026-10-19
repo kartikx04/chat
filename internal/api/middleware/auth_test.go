@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -85,4 +86,78 @@ func TestAuth(t *testing.T) {
 			t.Errorf("repository calls: got %v, want %v", got, want)
 		}
 	})
+}
+
+func TestAuthRejectsUnauthenticatedRequests(t *testing.T) {
+	expiredUserID := uuid.New()
+
+	tests := []struct {
+		name      string
+		session   models.Session
+		cookie    *http.Cookie
+		finderErr error
+		wantCalls int
+	}{
+		{
+			name:      "rejects request without session cookie",
+			wantCalls: 0,
+		},
+		{
+			name: "rejects request when session cannot be found",
+			cookie: &http.Cookie{
+				Name:  "session_id",
+				Value: "unknown-session-id",
+			},
+			finderErr: errors.New("session not found"),
+			wantCalls: 1,
+		},
+		{
+			name: "rejects request with expired session",
+			session: models.Session{
+				UserID:    expiredUserID,
+				ExpiresAt: time.Now().Add(-time.Hour),
+			},
+			cookie: &http.Cookie{
+				Name:  "session_id",
+				Value: "expired-session-id",
+			},
+			wantCalls: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sessionFinder := &fakeSessionFinder{
+				session: tt.session,
+				err:     tt.finderErr,
+			}
+
+			nextHandlerCalled := false
+			next := http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+				nextHandlerCalled = true
+				res.WriteHeader(http.StatusNoContent)
+			})
+
+			req := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			recorder := httptest.NewRecorder()
+
+			Auth(sessionFinder)(next).ServeHTTP(recorder, req)
+
+			if got, want := recorder.Code, http.StatusUnauthorized; got != want {
+				t.Errorf("status: got %v, want %v", got, want)
+			}
+
+			if nextHandlerCalled {
+				t.Error("next handler was called for an unauthenticated request")
+			}
+
+			if got, want := sessionFinder.calls, tt.wantCalls; got != want {
+				t.Errorf("repository calls: got %v, want %v", got, want)
+			}
+		})
+	}
 }
