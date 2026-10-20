@@ -26,7 +26,7 @@ func Run(cfg *config.App) {
 		os.Exit(1)
 	}
 
-	chi := chi.NewRouter()
+	router := chi.NewRouter()
 
 	oauthConfig := &oauth2.Config{
 		RedirectURL:  cfg.GoogleAuth.RedirectURL,
@@ -36,9 +36,9 @@ func Run(cfg *config.App) {
 		Endpoint:     google.Endpoint,
 	}
 
-	route.Register(cfg, db, chi, logger, oauthConfig)
+	route.Register(cfg, db, router, logger, oauthConfig)
 
-	server := api.NewHTTPServer(cfg, chi, logger)
+	server := api.NewHTTPServer(cfg, router, logger)
 
 	slog.Info("server running", "addr", server.Addr)
 
