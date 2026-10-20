@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/kartikx04/chat/internal/domain"
 )
@@ -20,7 +21,7 @@ func NewProfileUseCase(userRepo domain.UserRepository) domain.ProfileUseCase {
 func (pu *profileUseCase) GetProfileByID(c context.Context, id string) (*domain.Profile, error) {
 	user, err := pu.userRepo.GetByID(c, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get user by ID for profile: %w", err)
 	}
 
 	return &domain.Profile{Name: user.Username, Email: user.Email}, nil
