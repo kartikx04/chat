@@ -31,11 +31,7 @@ func (sr *sessionRepository) Create(ctx context.Context, session *models.Session
 		return err
 	}
 
-	sr.logger.InfoContext(ctx,
-		"session created",
-		"token", session.Token,
-		"user_id", session.UserID,
-	)
+	sr.logger.InfoContext(ctx, "session created", "id", session.ID, "user_id", session.UserID)
 
 	return nil
 }
