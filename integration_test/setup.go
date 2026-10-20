@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/cmd/app/config"
@@ -46,8 +45,6 @@ func Setup(t *testing.T) *TestApp {
 
 	router := chi.NewRouter()
 
-	timeout := 3 * time.Second
-
 	oauthConfig := &oauth2.Config{
 		RedirectURL:  cfg.GoogleAuth.RedirectURL,
 		ClientID:     cfg.GoogleAuth.ClientID,
@@ -56,7 +53,7 @@ func Setup(t *testing.T) *TestApp {
 		Endpoint:     google.Endpoint,
 	}
 
-	route.Register(cfg, timeout, testDB, router, logger, oauthConfig)
+	route.Register(cfg, testDB, router, logger, oauthConfig)
 
 	app := &TestApp{
 		Config:  cfg,

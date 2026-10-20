@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/cmd/app/config"
@@ -29,8 +28,6 @@ func Run(cfg *config.App) {
 
 	chi := chi.NewRouter()
 
-	timeout := time.Duration(3) * time.Second
-
 	oauthConfig := &oauth2.Config{
 		RedirectURL:  cfg.GoogleAuth.RedirectURL,
 		ClientID:     cfg.GoogleAuth.ClientID,
@@ -39,7 +36,7 @@ func Run(cfg *config.App) {
 		Endpoint:     google.Endpoint,
 	}
 
-	route.Register(cfg, timeout, db, chi, logger, oauthConfig)
+	route.Register(cfg, db, chi, logger, oauthConfig)
 
 	server := api.NewHTTPServer(cfg, chi)
 

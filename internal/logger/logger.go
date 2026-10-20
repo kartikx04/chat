@@ -5,16 +5,26 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 )
 
+type storedAttr struct {
+	attr   slog.Attr
+	groups []string
+}
+
 type colorHandler struct {
-	mu  sync.Mutex
-	lvl slog.Level
+	mu     *sync.Mutex
+	out    io.Writer
+	lvl    slog.Level
+	attrs  []storedAttr
+	groups []string
 }
 
 // ANSI codes
@@ -28,6 +38,14 @@ const (
 	bold   = "\033[1m"
 	blue   = "\033[34m"
 )
+
+func newColorHandler(out io.Writer, level slog.Level) *colorHandler {
+	return &colorHandler{
+		mu:  &sync.Mutex{},
+		out: out,
+		lvl: level,
+	}
+}
 
 func levelColor(l slog.Level) string {
 	switch {
@@ -46,8 +64,34 @@ func (h *colorHandler) Enabled(_ context.Context, level slog.Level) bool {
 	return level >= h.lvl
 }
 
-func (h *colorHandler) WithAttrs(attrs []slog.Attr) slog.Handler { return h }
-func (h *colorHandler) WithGroup(name string) slog.Handler       { return h }
+func (h *colorHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	if len(attrs) == 0 {
+		return h
+	}
+
+	clone := *h
+	clone.attrs = append([]storedAttr(nil), h.attrs...)
+
+	for _, attr := range attrs {
+		clone.attrs = append(clone.attrs, storedAttr{
+			attr:   attr,
+			groups: append([]string(nil), h.groups...),
+		})
+	}
+	return &clone
+
+}
+func (h *colorHandler) WithGroup(name string) slog.Handler {
+	if name == "" {
+		return h
+	}
+
+	clone := *h
+	clone.groups = append([]string(nil), h.groups...)
+	clone.groups = append(clone.groups, name)
+
+	return &clone
+}
 
 func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
 	var buf bytes.Buffer
@@ -80,32 +124,68 @@ func (h *colorHandler) Handle(_ context.Context, r slog.Record) error {
 		buf.WriteByte(' ')
 	}
 
+	for _, stored := range h.attrs {
+		writeAttr(&buf, stored.attr, stored.groups)
+	}
+
 	// key=value attrs — key in blue, value plain
-	r.Attrs(func(a slog.Attr) bool {
-		buf.WriteByte(' ')
-		buf.WriteString(blue)
-		buf.WriteString(a.Key)
-		buf.WriteString(reset)
-		buf.WriteByte('=')
-		val := fmt.Sprintf("%v", a.Value.Any())
-		buf.WriteString(cyan)
-		// quote values with spaces so they're clearly bounded
-		if containsSpace(val) || a.Value.Kind() == slog.KindString {
-			buf.WriteByte('"')
-			buf.WriteString(val)
-			buf.WriteByte('"')
-		} else {
-			buf.WriteString(val)
-		}
+	r.Attrs(func(attr slog.Attr) bool {
+		writeAttr(&buf, attr, h.groups)
 		return true
 	})
 
 	buf.WriteByte('\n')
 
 	h.mu.Lock()
-	os.Stdout.Write(buf.Bytes())
+	_, err := h.out.Write(buf.Bytes())
 	h.mu.Unlock()
-	return nil
+	return err
+}
+
+func writeAttr(buf *bytes.Buffer, attr slog.Attr, groups []string) {
+	attr.Value = attr.Value.Resolve()
+
+	if attr.Value.Kind() == slog.KindGroup {
+		nextGroups := append([]string(nil), groups...)
+		if attr.Key != "" {
+			nextGroups = append(nextGroups, attr.Key)
+		}
+
+		for _, child := range attr.Value.Group() {
+			writeAttr(buf, child, nextGroups)
+		}
+
+		return
+	}
+
+	if attr.Key == "" {
+		return
+	}
+
+	key := strings.Join(groups, ".")
+	if key != "" {
+		key += "."
+	}
+	key += attr.Key
+
+	value := fmt.Sprint(attr.Value.Any())
+
+	buf.WriteByte(' ')
+	buf.WriteString(blue)
+	buf.WriteString(key)
+	buf.WriteString(reset)
+	buf.WriteByte('=')
+	buf.WriteString(cyan)
+
+	if containsSpace(value) || attr.Value.Kind() == slog.KindString {
+		buf.WriteByte('"')
+		buf.WriteString(value)
+		buf.WriteByte('"')
+	} else {
+		buf.WriteString(value)
+	}
+
+	buf.WriteString(reset)
 }
 
 func containsSpace(s string) bool {
@@ -126,7 +206,7 @@ func Init(env string) *slog.Logger {
 			AddSource: false,
 		})
 	} else {
-		handler = &colorHandler{lvl: slog.LevelDebug}
+		handler = newColorHandler(os.Stdout, slog.LevelDebug)
 	}
 
 	log := slog.New(handler)

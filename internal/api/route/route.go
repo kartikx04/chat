@@ -3,7 +3,6 @@ package route
 import (
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kartikx04/chat/cmd/app/config"
@@ -16,10 +15,10 @@ import (
 
 // http method grouping and permissions
 
-func Register(cfg *config.App, timeout time.Duration, db *gorm.DB, r *chi.Mux, logger *slog.Logger, oauthConfig *oauth2.Config) {
-	oauthHandler := NewOAuthController(cfg, timeout, db, logger, oauthConfig)
-	profileHandler := NewProfileController(cfg, timeout, db, logger)
-	logoutHandler := NewLogoutController(cfg, timeout, db, logger, oauthConfig)
+func Register(cfg *config.App, db *gorm.DB, r *chi.Mux, logger *slog.Logger, oauthConfig *oauth2.Config) {
+	oauthHandler := NewOAuthController(cfg, db, logger, oauthConfig)
+	profileHandler := NewProfileController(cfg, db, logger)
+	logoutHandler := NewLogoutController(cfg, db, logger, oauthConfig)
 	sessionRepo := repository.NewSessionRepository(db, logger)
 
 	// public
