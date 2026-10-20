@@ -44,7 +44,7 @@ func Register(cfg *config.App, db *gorm.DB, r *chi.Mux, logger *slog.Logger, oau
 
 	// protected
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.Auth(sessionRepo))
+		r.Use(middleware.Auth(sessionRepo, logger))
 
 		r.Post("/logout", logoutHandler.Logout)
 		r.Get("/v1/users/me", profileHandler.Profile)

@@ -3,6 +3,8 @@ package middleware
 import (
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,6 +29,8 @@ func (f *fakeSessionFinder) FindByToken(_ context.Context, token string) (models
 
 	return f.session, f.err
 }
+
+var testLogger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 
 func TestAuth(t *testing.T) {
 	t.Run("adds user ID to context for valid session", func(t *testing.T) {
@@ -60,7 +64,7 @@ func TestAuth(t *testing.T) {
 
 		recorder := httptest.NewRecorder()
 
-		Auth(sessionFinder)(next).ServeHTTP(recorder, req)
+		Auth(sessionFinder, testLogger)(next).ServeHTTP(recorder, req)
 
 		if got, want := recorder.Code, http.StatusNoContent; got != want {
 			t.Errorf("status: got %v, want %v", got, want)
@@ -145,7 +149,7 @@ func TestAuthRejectsUnauthenticatedRequests(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 
-			Auth(sessionFinder)(next).ServeHTTP(recorder, req)
+			Auth(sessionFinder, testLogger)(next).ServeHTTP(recorder, req)
 
 			if got, want := recorder.Code, http.StatusUnauthorized; got != want {
 				t.Errorf("status: got %v, want %v", got, want)

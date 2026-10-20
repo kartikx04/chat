@@ -38,7 +38,7 @@ func Run(cfg *config.App) {
 
 	route.Register(cfg, db, chi, logger, oauthConfig)
 
-	server := api.NewHTTPServer(cfg, chi)
+	server := api.NewHTTPServer(cfg, chi, logger)
 
 	slog.Info("server running", "addr", server.Addr)
 
