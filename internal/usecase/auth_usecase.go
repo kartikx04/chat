@@ -16,10 +16,9 @@ import (
 )
 
 type authUseCase struct {
-	oauthConfig    *oauth2.Config
-	userRepo       domain.UserRepository
-	sessionRepo    domain.SessionRepository
-	contextTimeout time.Duration
+	oauthConfig *oauth2.Config
+	userRepo    domain.UserRepository
+	sessionRepo domain.SessionRepository
 }
 
 type GoogleUser struct {
@@ -30,12 +29,11 @@ type GoogleUser struct {
 	Picture       string `json:"picture"`
 }
 
-func NewAuthUseCase(oauthConfig *oauth2.Config, userRepo domain.UserRepository, sessionRepo domain.SessionRepository, timeout time.Duration) domain.AuthUseCase {
+func NewAuthUseCase(oauthConfig *oauth2.Config, userRepo domain.UserRepository, sessionRepo domain.SessionRepository) domain.AuthUseCase {
 	return &authUseCase{
-		oauthConfig:    oauthConfig,
-		userRepo:       userRepo,
-		sessionRepo:    sessionRepo,
-		contextTimeout: timeout,
+		oauthConfig: oauthConfig,
+		userRepo:    userRepo,
+		sessionRepo: sessionRepo,
 	}
 }
 

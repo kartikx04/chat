@@ -2,7 +2,6 @@ package route
 
 import (
 	"log/slog"
-	"time"
 
 	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/api/controller"
@@ -12,11 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewLogoutController(cfg *config.App, timeout time.Duration, db *gorm.DB, logger *slog.Logger, oauthConfig *oauth2.Config) *controller.LogoutController {
+func NewLogoutController(cfg *config.App, db *gorm.DB, logger *slog.Logger, oauthConfig *oauth2.Config) *controller.LogoutController {
 	ur := repository.NewUserRepository(db, logger)
 	sr := repository.NewSessionRepository(db, logger)
 	return &controller.LogoutController{
-		AuthUseCase: usecase.NewAuthUseCase(oauthConfig, ur, sr, timeout),
+		AuthUseCase: usecase.NewAuthUseCase(oauthConfig, ur, sr),
 		Env:         cfg.Server.Env,
 	}
 }

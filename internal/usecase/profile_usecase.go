@@ -2,21 +2,18 @@ package usecase
 
 import (
 	"context"
-	"time"
 
 	"github.com/kartikx04/chat/internal/domain"
 )
 
 type profileUseCase struct {
-	ctx            context.Context
-	userRepo       domain.UserRepository
-	ContextTimeout time.Duration
+	ctx      context.Context
+	userRepo domain.UserRepository
 }
 
-func NewProfileUseCase(timeout time.Duration, userRepo domain.UserRepository) domain.ProfileUseCase {
+func NewProfileUseCase(userRepo domain.UserRepository) domain.ProfileUseCase {
 	return &profileUseCase{
-		ContextTimeout: timeout,
-		userRepo:       userRepo,
+		userRepo: userRepo,
 	}
 }
 

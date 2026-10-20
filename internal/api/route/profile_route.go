@@ -2,7 +2,6 @@ package route
 
 import (
 	"log/slog"
-	"time"
 
 	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/api/controller"
@@ -11,9 +10,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewProfileController(cfg *config.App, timeout time.Duration, db *gorm.DB, logger *slog.Logger) *controller.ProfileController {
+func NewProfileController(cfg *config.App, db *gorm.DB, logger *slog.Logger) *controller.ProfileController {
 	ur := repository.NewUserRepository(db, logger)
 	return &controller.ProfileController{
-		ProfileUseCase: useCase.NewProfileUseCase(timeout, ur),
+		ProfileUseCase: useCase.NewProfileUseCase(ur),
 	}
 }
