@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type authUseCase struct {
+type authUsecase struct {
 	oauthConfig *oauth2.Config
 	userRepo    domain.UserRepository
 	sessionRepo domain.SessionRepository
@@ -29,15 +29,15 @@ type GoogleUser struct {
 	Picture       string `json:"picture"`
 }
 
-func NewAuthUseCase(oauthConfig *oauth2.Config, userRepo domain.UserRepository, sessionRepo domain.SessionRepository) domain.AuthUseCase {
-	return &authUseCase{
+func NewAuthUsecase(oauthConfig *oauth2.Config, userRepo domain.UserRepository, sessionRepo domain.SessionRepository) domain.AuthUsecase {
+	return &authUsecase{
 		oauthConfig: oauthConfig,
 		userRepo:    userRepo,
 		sessionRepo: sessionRepo,
 	}
 }
 
-func (au *authUseCase) InitiateGoogleOAuth(ctx context.Context) (string, string, error) {
+func (au *authUsecase) InitiateGoogleOAuth(ctx context.Context) (string, string, error) {
 	state, err := pkg.GenerateStateToken()
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to generate oauth state token", "error", err)
@@ -49,7 +49,7 @@ func (au *authUseCase) InitiateGoogleOAuth(ctx context.Context) (string, string,
 	return state, authURL, nil
 }
 
-func (au *authUseCase) CompleteGoogleOAuth(ctx context.Context, code string) (string, error) {
+func (au *authUsecase) CompleteGoogleOAuth(ctx context.Context, code string) (string, error) {
 	token, err := au.oauthConfig.Exchange(ctx, code)
 	if err != nil {
 		return "", err
@@ -108,6 +108,6 @@ func (au *authUseCase) CompleteGoogleOAuth(ctx context.Context, code string) (st
 	return sessionToken, nil
 }
 
-func (au *authUseCase) Logout(ctx context.Context, cookie string) error {
+func (au *authUsecase) Logout(ctx context.Context, cookie string) error {
 	return au.sessionRepo.DeleteByToken(ctx, cookie)
 }

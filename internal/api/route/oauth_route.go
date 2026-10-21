@@ -14,8 +14,9 @@ import (
 func NewOAuthController(cfg *config.App, db *gorm.DB, logger *slog.Logger, oauthConfig *oauth2.Config) *controller.OAuthController {
 	ur := repository.NewUserRepository(db, logger)
 	sr := repository.NewSessionRepository(db, logger)
-	return &controller.OAuthController{
-		AuthUseCase: usecase.NewAuthUseCase(oauthConfig, ur, sr),
-		Env:         cfg.Server.Env,
-	}
+
+	newAuthUsecase := usecase.NewAuthUsecase(oauthConfig, ur, sr)
+	env := cfg.Server.Env
+
+	return controller.NewOAuthController(newAuthUsecase, env, logger)
 }

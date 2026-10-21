@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type AuthUseCase interface {
+type AuthUsecase interface {
 	InitiateGoogleOAuth(ctx context.Context) (string, string, error)
 	CompleteGoogleOAuth(ctx context.Context, code string) (string, error)
 

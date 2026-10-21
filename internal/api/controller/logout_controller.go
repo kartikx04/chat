@@ -8,8 +8,17 @@ import (
 )
 
 type LogoutController struct {
-	AuthUseCase domain.AuthUseCase
-	Env         string
+	authUsecase domain.AuthUsecase
+	env         string
+	logger      *slog.Logger
+}
+
+func NewLogoutController(authUsecase domain.AuthUsecase, env string, logger *slog.Logger) *LogoutController {
+	return &LogoutController{
+		authUsecase: authUsecase,
+		env:         env,
+		logger:      logger,
+	}
 }
 
 func (lc *LogoutController) Logout(res http.ResponseWriter, req *http.Request) {
@@ -20,7 +29,7 @@ func (lc *LogoutController) Logout(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = lc.AuthUseCase.Logout(req.Context(), cookie.Value)
+	err = lc.authUsecase.Logout(req.Context(), cookie.Value)
 	if err != nil {
 		slog.ErrorContext(req.Context(), "failed to logout", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)
@@ -33,7 +42,7 @@ func (lc *LogoutController) Logout(res http.ResponseWriter, req *http.Request) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   lc.Env == "production",
+		Secure:   lc.env == "production",
 		SameSite: http.SameSiteLaxMode,
 	})
 	slog.InfoContext(req.Context(), "user logged out")

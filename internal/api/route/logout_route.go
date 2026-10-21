@@ -14,8 +14,9 @@ import (
 func NewLogoutController(cfg *config.App, db *gorm.DB, logger *slog.Logger, oauthConfig *oauth2.Config) *controller.LogoutController {
 	ur := repository.NewUserRepository(db, logger)
 	sr := repository.NewSessionRepository(db, logger)
-	return &controller.LogoutController{
-		AuthUseCase: usecase.NewAuthUseCase(oauthConfig, ur, sr),
-		Env:         cfg.Server.Env,
-	}
+
+	authUsecase := usecase.NewAuthUsecase(oauthConfig, ur, sr)
+	env := cfg.Server.Env
+
+	return controller.NewLogoutController(authUsecase, env, logger)
 }
