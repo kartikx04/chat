@@ -6,13 +6,11 @@ import (
 	"github.com/kartikx04/chat/cmd/app/config"
 	"github.com/kartikx04/chat/internal/api/controller"
 	"github.com/kartikx04/chat/internal/repository"
-	useCase "github.com/kartikx04/chat/internal/usecase"
+	"github.com/kartikx04/chat/internal/usecase"
 	"gorm.io/gorm"
 )
 
 func NewProfileController(cfg *config.App, db *gorm.DB, logger *slog.Logger) *controller.ProfileController {
 	ur := repository.NewUserRepository(db, logger)
-	return &controller.ProfileController{
-		ProfileUseCase: useCase.NewProfileUseCase(ur),
-	}
+	return controller.NewProfilecontroller(usecase.NewProfileUseCase(ur), logger)
 }

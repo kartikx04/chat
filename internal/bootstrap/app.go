@@ -40,11 +40,11 @@ func Run(cfg *config.App) {
 
 	server := api.NewHTTPServer(cfg, router, logger)
 
-	slog.Info("server running", "addr", server.Addr)
+	logger.Info("server running", "addr", server.Addr)
 
 	// ListenAndServe blocks forever
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error("server error", "error", err)
+		logger.Error("server error", "error", err)
 		os.Exit(1)
 	}
 }

@@ -10,20 +10,30 @@ import (
 )
 
 type ProfileController struct {
-	ProfileUseCase domain.ProfileUseCase
+	profileUseCase domain.ProfileUseCase
+	logger         *slog.Logger
+}
+
+func NewProfilecontroller(profileUseCase domain.ProfileUseCase, logger *slog.Logger) *ProfileController {
+	return &ProfileController{
+		profileUseCase: profileUseCase,
+		logger:         logger,
+	}
 }
 
 func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request) {
+	log := pkg.RequestLogger(req.Context(), pc.logger)
+
 	userID, ok := pkg.GetUserID(req.Context())
 	if !ok {
-		slog.WarnContext(req.Context(), "unable to fetch user id from context")
+		log.WarnContext(req.Context(), "unable to fetch user id from context")
 		http.Error(res, "auth failed", http.StatusBadRequest)
 		return
 	}
 
-	profile, err := pc.ProfileUseCase.GetProfileByID(req.Context(), userID)
+	profile, err := pc.profileUseCase.GetProfileByID(req.Context(), userID)
 	if err != nil {
-		slog.WarnContext(req.Context(), "unable to fetch id")
+		log.WarnContext(req.Context(), "unable to fetch id")
 		http.Error(res, "auth failed", http.StatusBadRequest)
 		return
 	}
