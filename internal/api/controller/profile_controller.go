@@ -24,18 +24,21 @@ func NewProfileController(profileUseCase domain.ProfileUseCase, logger *slog.Log
 func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request) {
 	userID, ok := pkg.GetUserID(req.Context())
 	if !ok {
-		pc.logger.WarnContext(req.Context(), "unable to fetch user id from context")
-		http.Error(res, "auth failed", http.StatusBadRequest)
+		pc.logger.WarnContext(req.Context(), "user ID is missing from request context")
+		http.Error(res, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	profile, err := pc.profileUseCase.GetProfileByID(req.Context(), userID)
 	if err != nil {
-		pc.logger.WarnContext(req.Context(), "unable to fetch id")
-		http.Error(res, "auth failed", http.StatusBadRequest)
+		pc.logger.ErrorContext(req.Context(), "unable to load profile", "error", err)
+		http.Error(res, "unable to load profile", http.StatusInternalServerError)
 		return
 	}
 
 	res.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(res).Encode(profile)
+
+	if err := json.NewEncoder(res).Encode(profile); err != nil {
+		pc.logger.ErrorContext(req.Context(), "unable to encode profile response", "error", err)
+	}
 }
