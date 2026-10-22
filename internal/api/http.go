@@ -15,7 +15,7 @@ func NewHTTPServer(cfg *config.App, router *chi.Mux, logger *slog.Logger) *http.
 		AllowedOrigins:   []string{},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization", "Cookie"},
-		ExposedHeaders:   []string{"Set-Cookie"},
+		ExposedHeaders:   []string{"Set-Cookie", "X-Request-ID"},
 		AllowCredentials: true,
 	})
 

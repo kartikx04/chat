@@ -62,10 +62,7 @@ func (ac *OAuthController) CompleteGoogleOAuth(res http.ResponseWriter, req *htt
 	}
 
 	if state != stateCookie.Value {
-		log.ErrorContext(req.Context(), "oauth_state MISMATCH - possible CSRF or stale link",
-			"query_state", state,
-			"cookie_state", stateCookie.Value,
-		)
+		log.ErrorContext(req.Context(), "oauth_state MISMATCH")
 		http.Error(res, "internal server error", http.StatusBadRequest)
 		return
 	}

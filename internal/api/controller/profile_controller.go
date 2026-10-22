@@ -14,7 +14,7 @@ type ProfileController struct {
 	logger         *slog.Logger
 }
 
-func NewProfilecontroller(profileUseCase domain.ProfileUseCase, logger *slog.Logger) *ProfileController {
+func NewProfileController(profileUseCase domain.ProfileUseCase, logger *slog.Logger) *ProfileController {
 	return &ProfileController{
 		profileUseCase: profileUseCase,
 		logger:         logger,

@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/kartikx04/chat/pkg"
 )
 
@@ -24,8 +26,6 @@ func TestRequestID(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	recorder := httptest.NewRecorder()
 
-	next.ServeHTTP(recorder, req)
-
 	RequestID(logger)(next).ServeHTTP(recorder, req)
 
 	if got, want := recorder.Code, http.StatusNoContent; got != want {
@@ -34,6 +34,10 @@ func TestRequestID(t *testing.T) {
 
 	if !contextContainRequestID {
 		t.Error("RequestID was not added to context")
+	}
+
+	if _, err := uuid.Parse(gotRequestID); err != nil {
+		t.Errorf("request ID is not a valid UUID: %q", gotRequestID)
 	}
 
 	if got, want := recorder.Header().Get("X-Request-ID"), gotRequestID; got != want {

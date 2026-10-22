@@ -24,7 +24,7 @@ func RequestID(logger *slog.Logger) func(http.Handler) http.Handler {
 			recorder := chimiddleware.NewWrapResponseWriter(res, req.ProtoMajor)
 			startedAt := time.Now()
 
-			next.ServeHTTP(res, req)
+			next.ServeHTTP(recorder, req)
 
 			pkg.RequestLogger(ctx, logger).InfoContext(
 				ctx,
