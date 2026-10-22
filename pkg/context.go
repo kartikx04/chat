@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"log/slog"
 )
 
 type contextKey int
@@ -28,16 +27,4 @@ func AttachUserID(ctx context.Context, userID string) context.Context {
 func GetUserID(ctx context.Context) (string, bool) {
 	userID, ok := ctx.Value(userIDKey).(string)
 	return userID, ok
-}
-
-func RequestLogger(ctx context.Context, logger *slog.Logger) *slog.Logger {
-	if requestID, ok := GetRequestID(ctx); ok {
-		logger = logger.With("request_id", requestID)
-	}
-
-	if userID, ok := GetUserID(ctx); ok {
-		logger = logger.With("user_id", userID)
-	}
-
-	return logger
 }
