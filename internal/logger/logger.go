@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/kartikx04/chat/pkg"
 )
 
 type storedAttr struct {
@@ -188,6 +190,38 @@ func writeAttr(buf *bytes.Buffer, attr slog.Attr, groups []string) {
 	buf.WriteString(reset)
 }
 
+type contextHandler struct {
+	next slog.Handler
+}
+
+func (h *contextHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.next.Enabled(ctx, level)
+}
+
+func (h *contextHandler) Handle(ctx context.Context, record slog.Record) error {
+	if requestID, ok := pkg.GetRequestID(ctx); ok {
+		record.AddAttrs(slog.String("request_id", requestID))
+	}
+
+	if userID, ok := pkg.GetUserID(ctx); ok {
+		record.AddAttrs(slog.String("user_id", userID))
+	}
+
+	return h.next.Handle(ctx, record)
+}
+
+func (h *contextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &contextHandler{
+		next: h.next.WithAttrs(attrs),
+	}
+}
+
+func (h *contextHandler) WithGroup(name string) slog.Handler {
+	return &contextHandler{
+		next: h.next.WithGroup(name),
+	}
+}
+
 func containsSpace(s string) bool {
 	for _, c := range s {
 		if c == ' ' || c == ':' || c == '=' {
@@ -209,7 +243,9 @@ func Init(env string) *slog.Logger {
 		handler = newColorHandler(os.Stdout, slog.LevelDebug)
 	}
 
-	log := slog.New(handler)
+	log := slog.New(&contextHandler{
+		next: handler,
+	})
 	slog.SetDefault(log)
 	return log
 }

@@ -22,18 +22,16 @@ func NewProfileController(profileUseCase domain.ProfileUseCase, logger *slog.Log
 }
 
 func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request) {
-	log := pkg.RequestLogger(req.Context(), pc.logger)
-
 	userID, ok := pkg.GetUserID(req.Context())
 	if !ok {
-		log.WarnContext(req.Context(), "unable to fetch user id from context")
+		pc.logger.WarnContext(req.Context(), "unable to fetch user id from context")
 		http.Error(res, "auth failed", http.StatusBadRequest)
 		return
 	}
 
 	profile, err := pc.profileUseCase.GetProfileByID(req.Context(), userID)
 	if err != nil {
-		log.WarnContext(req.Context(), "unable to fetch id")
+		pc.logger.WarnContext(req.Context(), "unable to fetch id")
 		http.Error(res, "auth failed", http.StatusBadRequest)
 		return
 	}

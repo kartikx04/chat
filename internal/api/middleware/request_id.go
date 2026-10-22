@@ -26,7 +26,7 @@ func RequestID(logger *slog.Logger) func(http.Handler) http.Handler {
 
 			next.ServeHTTP(recorder, req)
 
-			pkg.RequestLogger(ctx, logger).InfoContext(
+			logger.InfoContext(
 				ctx,
 				"http request completed",
 				"method", req.Method,
