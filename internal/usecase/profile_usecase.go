@@ -5,11 +5,15 @@ import (
 	"fmt"
 
 	"github.com/kartikx04/chat/internal/domain"
+	"github.com/kartikx04/chat/internal/models"
 )
 
+type userByIDFinder interface {
+	GetByID(c context.Context, id string) (models.User, error)
+}
+
 type profileUseCase struct {
-	ctx      context.Context
-	userRepo domain.UserRepository
+	userRepo userByIDFinder
 }
 
 func NewProfileUseCase(userRepo domain.UserRepository) domain.ProfileUseCase {

@@ -17,7 +17,7 @@ import (
 
 func Register(cfg *config.App, db *gorm.DB, r *chi.Mux, logger *slog.Logger, oauthConfig *oauth2.Config) {
 	oauthHandler := NewOAuthController(cfg, db, logger, oauthConfig)
-	profileHandler := NewProfileController(cfg, db, logger)
+	profileHandler := NewProfileController(db, logger)
 	logoutHandler := NewLogoutController(cfg, db, logger, oauthConfig)
 	sessionRepo := repository.NewSessionRepository(db, logger)
 
