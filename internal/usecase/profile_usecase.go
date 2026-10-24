@@ -16,7 +16,7 @@ type profileUsecase struct {
 	userRepo userByIDFinder
 }
 
-func NewProfileUsecase(userRepo domain.UserRepository) domain.ProfileUsecase {
+func NewProfileUsecase(userRepo userByIDFinder) domain.ProfileUsecase {
 	return &profileUsecase{
 		userRepo: userRepo,
 	}
