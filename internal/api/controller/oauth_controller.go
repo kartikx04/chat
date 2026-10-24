@@ -8,21 +8,21 @@ import (
 )
 
 type OAuthController struct {
-	authUseCase domain.AuthUsecase
+	authUsecase domain.AuthUsecase
 	env         string
 	logger      *slog.Logger
 }
 
-func NewOAuthController(authUseCase domain.AuthUsecase, env string, logger *slog.Logger) *OAuthController {
+func NewOAuthController(authUsecase domain.AuthUsecase, env string, logger *slog.Logger) *OAuthController {
 	return &OAuthController{
-		authUseCase: authUseCase,
+		authUsecase: authUsecase,
 		env:         env,
 		logger:      logger,
 	}
 }
 
 func (ac *OAuthController) StartGoogleOAuth(res http.ResponseWriter, req *http.Request) {
-	state, authURL, err := ac.authUseCase.InitiateGoogleOAuth(req.Context())
+	state, authURL, err := ac.authUsecase.InitiateGoogleOAuth(req.Context())
 	if err != nil {
 		ac.logger.WarnContext(req.Context(), "error signing in", "error", err)
 		http.Error(res, "internal server error", http.StatusBadRequest)
@@ -77,7 +77,7 @@ func (ac *OAuthController) CompleteGoogleOAuth(res http.ResponseWriter, req *htt
 		return
 	}
 
-	token, err := ac.authUseCase.CompleteGoogleOAuth(req.Context(), code)
+	token, err := ac.authUsecase.CompleteGoogleOAuth(req.Context(), code)
 	if err != nil {
 		ac.logger.ErrorContext(req.Context(), "failed to finalize google auth", "error", err)
 		http.Error(res, "internal server error", http.StatusInternalServerError)

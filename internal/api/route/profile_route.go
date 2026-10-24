@@ -11,5 +11,5 @@ import (
 
 func NewProfileController(db *gorm.DB, logger *slog.Logger) *controller.ProfileController {
 	ur := repository.NewUserRepository(db, logger)
-	return controller.NewProfileController(usecase.NewProfileUseCase(ur), logger)
+	return controller.NewProfileController(usecase.NewProfileUsecase(ur), logger)
 }

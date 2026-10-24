@@ -10,13 +10,13 @@ import (
 )
 
 type ProfileController struct {
-	profileUseCase domain.ProfileUseCase
+	profileUsecase domain.ProfileUsecase
 	logger         *slog.Logger
 }
 
-func NewProfileController(profileUseCase domain.ProfileUseCase, logger *slog.Logger) *ProfileController {
+func NewProfileController(profileUsecase domain.ProfileUsecase, logger *slog.Logger) *ProfileController {
 	return &ProfileController{
-		profileUseCase: profileUseCase,
+		profileUsecase: profileUsecase,
 		logger:         logger,
 	}
 }
@@ -29,7 +29,7 @@ func (pc *ProfileController) Profile(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	profile, err := pc.profileUseCase.GetProfileByID(req.Context(), userID)
+	profile, err := pc.profileUsecase.GetProfileByID(req.Context(), userID)
 	if err != nil {
 		pc.logger.ErrorContext(req.Context(), "unable to load profile", "error", err)
 		http.Error(res, "unable to load profile", http.StatusInternalServerError)

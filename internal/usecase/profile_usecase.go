@@ -12,17 +12,17 @@ type userByIDFinder interface {
 	GetByID(c context.Context, id string) (models.User, error)
 }
 
-type profileUseCase struct {
+type profileUsecase struct {
 	userRepo userByIDFinder
 }
 
-func NewProfileUseCase(userRepo domain.UserRepository) domain.ProfileUseCase {
-	return &profileUseCase{
+func NewProfileUsecase(userRepo domain.UserRepository) domain.ProfileUsecase {
+	return &profileUsecase{
 		userRepo: userRepo,
 	}
 }
 
-func (pu *profileUseCase) GetProfileByID(c context.Context, id string) (*domain.Profile, error) {
+func (pu *profileUsecase) GetProfileByID(c context.Context, id string) (*domain.Profile, error) {
 	user, err := pu.userRepo.GetByID(c, id)
 	if err != nil {
 		return nil, fmt.Errorf("get user by ID for profile: %w", err)

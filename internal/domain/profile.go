@@ -9,6 +9,6 @@ type Profile struct {
 	Email string
 }
 
-type ProfileUseCase interface {
+type ProfileUsecase interface {
 	GetProfileByID(c context.Context, ID string) (*Profile, error)
 }
