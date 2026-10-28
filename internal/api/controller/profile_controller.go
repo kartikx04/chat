@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -9,8 +10,12 @@ import (
 	"github.com/kartikx04/chat/pkg"
 )
 
+type profileByIDFinder interface {
+	GetProfileByID(c context.Context, ID string) (*domain.Profile, error)
+}
+
 type ProfileController struct {
-	profileUsecase domain.ProfileUsecase
+	profileUsecase profileByIDFinder
 	logger         *slog.Logger
 }
 
