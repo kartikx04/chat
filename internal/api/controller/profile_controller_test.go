@@ -72,3 +72,23 @@ func TestProfileControllerReturnsProfile(t *testing.T) {
 		t.Errorf("profile: got %v, want %v", got, want)
 	}
 }
+
+func TestProfileControllerRejectsRequestWithoutUserID(t *testing.T) {
+	finder := &fakeProfileByIDFinder{}
+	logger := slog.New(slog.Handler(slog.DiscardHandler))
+
+	profileService := NewProfileController(finder, logger)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
+	recorder := httptest.NewRecorder()
+
+	profileService.Profile(recorder, req)
+
+	if got, want := recorder.Code, http.StatusUnauthorized; got != want {
+		t.Errorf("status: got %v, want %v", got, want)
+	}
+
+	if got, want := finder.callCount, 0; got != want {
+		t.Errorf("usecase calls: got %v, want %v", got, want)
+	}
+}
