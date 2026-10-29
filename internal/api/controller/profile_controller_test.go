@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -90,5 +91,57 @@ func TestProfileControllerRejectsRequestWithoutUserID(t *testing.T) {
 
 	if got, want := finder.callCount, 0; got != want {
 		t.Errorf("usecase calls: got %v, want %v", got, want)
+	}
+}
+
+func TestProfileControllerFailurePaths(t *testing.T) {
+	repositoryErr := errors.New("repository unavailable")
+	tests := []struct {
+		name       string
+		userID     string
+		wantStatus int
+		wantCalls  int
+		finderErr  error
+	}{
+		{
+			name:       "reject request without user ID",
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			name:       "return server error when profile lookup fails",
+			userID:     "user-id-123",
+			wantStatus: http.StatusInternalServerError,
+			wantCalls:  1,
+			finderErr:  repositoryErr,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			finder := &fakeProfileByIDFinder{err: tt.finderErr}
+			logger := slog.New(slog.Handler(slog.DiscardHandler))
+
+			profileService := NewProfileController(finder, logger)
+
+			req := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
+			if tt.userID != "" {
+				req = req.WithContext(pkg.AttachUserID(req.Context(), tt.userID))
+			}
+			recorder := httptest.NewRecorder()
+
+			profileService.Profile(recorder, req)
+
+			if got, want := recorder.Code, tt.wantStatus; got != want {
+				t.Errorf("code: got %v, want %v", got, want)
+			}
+
+			if got, want := finder.callCount, tt.wantCalls; got != want {
+				t.Errorf("usecase calls: got %v, want %v", got, want)
+			}
+
+			if tt.userID != "" && finder.gotID != tt.userID {
+				t.Errorf("user ID: got %v, want %v", finder.gotID, tt.userID)
+			}
+		})
 	}
 }
