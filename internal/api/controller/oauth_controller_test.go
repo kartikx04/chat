@@ -169,7 +169,7 @@ func TestCompleteGoogleOAuth(t *testing.T) {
 			controller.CompleteGoogleOAuth(recorder, req)
 
 			if got, want := recorder.Code, tt.wantStatus; got != want {
-				t.Errorf("status: got %v, want %v", got, want)
+				t.Fatalf("status: got %v, want %v", got, want)
 			}
 			if got, want := auth.completeCallCount, tt.wantCompleteCallCount; got != want {
 				t.Errorf("complete call count: got %d, want %d", got, want)
