@@ -35,7 +35,7 @@ func (ac *OAuthController) StartGoogleOAuth(res http.ResponseWriter, req *http.R
 		MaxAge:   300,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   false,
+		Secure:   ac.env == "production",
 	})
 
 	ac.logger.InfoContext(req.Context(), "oauth redirect initiated")
