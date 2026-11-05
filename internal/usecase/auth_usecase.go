@@ -66,12 +66,15 @@ func (au *authUsecase) CompleteGoogleOAuth(ctx context.Context, code string) (st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("google user info returned: %s", resp.StatusCode)
+		return "", fmt.Errorf("google user info returned: %s", resp.Status)
 	}
 	var googleUser GoogleUser
 
 	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
 		return "", err
+	}
+	if googleUser.ID == "" || googleUser.Email == "" || !googleUser.VerifiedEmail {
+		return "", fmt.Errorf("google returned an incomplete or unverified identity")
 	}
 	if googleUser.ID == "" || googleUser.Email == "" || !googleUser.VerifiedEmail {
 		return "", fmt.Errorf("google returned an incomplete or unverified identity")
