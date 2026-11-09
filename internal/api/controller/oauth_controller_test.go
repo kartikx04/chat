@@ -199,3 +199,29 @@ func TestCompleteGoogleOAuth(t *testing.T) {
 		})
 	}
 }
+
+func TestStartGoogleOAuthSetsSecureStateCookieInProduction(t *testing.T) {
+	auth := &fakeAuthUsecase{
+		state:   "state-123",
+		authURL: "https://accounts.example.test/auth",
+	}
+	controller := NewOAuthController(auth, "production", slog.New(slog.Handler(slog.DiscardHandler)))
+	req := httptest.NewRequest(http.MethodGet, "/auth/google-sso", nil)
+	recorder := httptest.NewRecorder()
+
+	controller.StartGoogleOAuth(recorder, req)
+
+	var stateCookie *http.Cookie
+	for _, cookie := range recorder.Result().Cookies() {
+		if cookie.Name == "oauth_state" {
+			stateCookie = cookie
+			break
+		}
+	}
+	if stateCookie == nil {
+		t.Fatal("oauth_state cookie was not set")
+	}
+	if !stateCookie.Secure {
+		t.Error("oauth_state cookie should be Secure in production")
+	}
+}
