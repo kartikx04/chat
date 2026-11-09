@@ -11,4 +11,5 @@ type UserRepository interface {
 	List(c context.Context) ([]models.User, error)
 	GetByEmail(c context.Context, email string) (models.User, error)
 	GetByID(c context.Context, id string) (models.User, error)
+	GetByOAuthID(c context.Context, id string) (models.User, error)
 }

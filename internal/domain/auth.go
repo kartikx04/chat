@@ -2,7 +2,10 @@ package domain
 
 import (
 	"context"
+	"errors"
 )
+
+var ErrAccountLinkRequired = errors.New("account linking required")
 
 type AuthUsecase interface {
 	InitiateGoogleOAuth(ctx context.Context) (string, string, error)

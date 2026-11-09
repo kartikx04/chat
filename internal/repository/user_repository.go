@@ -107,3 +107,30 @@ func (ur *userRepository) GetByID(ctx context.Context, id string) (models.User, 
 
 	return user, nil
 }
+
+func (ur *userRepository) GetByOAuthID(ctx context.Context, oauthID string) (models.User, error) {
+	var user models.User
+
+	err := ur.db.WithContext(ctx).
+		Where("oauth_id = ?", oauthID).
+		First(&user).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ur.logger.WarnContext(ctx,
+				"user not found",
+				"oauth_id", oauthID,
+			)
+			return models.User{}, gorm.ErrRecordNotFound
+		}
+
+		ur.logger.ErrorContext(ctx,
+			"failed to fetch user by id",
+			"oauthID", oauthID,
+			"error", err,
+		)
+		return models.User{}, err
+	}
+
+	return user, nil
+}

@@ -80,25 +80,33 @@ func (au *authUsecase) CompleteGoogleOAuth(ctx context.Context, code string) (st
 		return "", fmt.Errorf("google returned an incomplete or unverified identity")
 	}
 
-	user, err := au.userRepo.GetByEmail(ctx, googleUser.Email)
+	user, err := au.userRepo.GetByOAuthID(ctx, googleUser.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", err
+		}
 
-			user = models.User{
-				ID:        uuid.New(),
-				OAuthID:   googleUser.ID,
-				Email:     googleUser.Email,
-				Username:  pkg.GenerateUniqueName(),
-				Picture:   googleUser.Picture,
-				Role:      "user",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
+		_, emailErr := au.userRepo.GetByEmail(ctx, googleUser.Email)
+		if emailErr == nil {
+			return "", domain.ErrAccountLinkRequired
+		}
+		if !errors.Is(emailErr, gorm.ErrRecordNotFound) {
+			return "", emailErr
+		}
 
-			if err := au.userRepo.Create(ctx, &user); err != nil {
-				return "", err
-			}
-		} else {
+		now := time.Now()
+		user = models.User{
+			ID:        uuid.New(),
+			OAuthID:   googleUser.ID,
+			Email:     googleUser.Email,
+			Username:  pkg.GenerateUniqueName(),
+			Picture:   googleUser.Picture,
+			Role:      "user",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		if err := au.userRepo.Create(ctx, &user); err != nil {
 			return "", err
 		}
 	}
