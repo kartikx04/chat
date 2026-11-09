@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -80,6 +81,10 @@ func (ac *OAuthController) CompleteGoogleOAuth(res http.ResponseWriter, req *htt
 	token, err := ac.authUsecase.CompleteGoogleOAuth(req.Context(), code)
 	if err != nil {
 		ac.logger.ErrorContext(req.Context(), "failed to finalize google auth", "error", err)
+		if errors.Is(err, domain.ErrAccountLinkRequired) {
+			http.Error(res, "account linking required", http.StatusConflict)
+			return
+		}
 		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}

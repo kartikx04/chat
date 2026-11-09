@@ -2,13 +2,19 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"testing"
 
+	"github.com/google/uuid"
+
+	"github.com/kartikx04/chat/internal/domain"
 	"github.com/kartikx04/chat/internal/models"
 	"golang.org/x/oauth2"
+	"gorm.io/gorm"
 )
 
 type fakeAuthUserRepository struct {
@@ -17,8 +23,12 @@ type fakeAuthUserRepository struct {
 	createErr       error
 
 	user         models.User
-	getCallCount int
-	getErr       error
+	gotCallCount int
+	gotErr       error
+
+	oauthUser         models.User
+	oauthGetCallCount int
+	oauthGetErr       error
 }
 
 func (f *fakeAuthUserRepository) Create(_ context.Context, user *models.User) error {
@@ -32,12 +42,17 @@ func (f *fakeAuthUserRepository) List(_ context.Context) ([]models.User, error) 
 }
 
 func (f *fakeAuthUserRepository) GetByEmail(_ context.Context, _ string) (models.User, error) {
-	f.getCallCount++
-	return f.user, f.getErr
+	f.gotCallCount++
+	return f.user, f.gotErr
 }
 
 func (f *fakeAuthUserRepository) GetByID(_ context.Context, _ string) (models.User, error) {
 	return models.User{}, nil
+}
+
+func (f *fakeAuthUserRepository) GetByOAuthID(_ context.Context, _ string) (models.User, error) {
+	f.oauthGetCallCount++
+	return f.oauthUser, f.oauthGetErr
 }
 
 type fakeAuthSessionRepository struct {
@@ -95,7 +110,7 @@ func authTestTransport(tokenStatus int) http.RoundTripper {
 			}
 			return jsonResponse(req, http.StatusOK, `{"access_token": "access-123", "token_type": "Bearer", "expires_in": 3600}`), nil
 		case "www.googleapis.com/oauth2/v2/userinfo":
-			return jsonResponse(req, http.StatusOK, `{"id": "google-123", "email": "person@example.com", "name": "person", "picture": "https://example.test/p.png"}`), nil
+			return jsonResponse(req, http.StatusOK, `{"id":"google-123", "email":"person@example.com", "name":"person", "verified_email":true, "picture":"https://example.test/p.png"}`), nil
 		default:
 			return nil, fmt.Errorf("unexpected oauth http request: %s", req.URL)
 		}
@@ -120,5 +135,93 @@ func authTestOAuthConfig() *oauth2.Config {
 			TokenURL: "https://oauth.test/token",
 		},
 		Scopes: []string{"profile"},
+	}
+}
+
+func TestCompleteGoogleOAuthIdentityResolution(t *testing.T) {
+	existingUser := models.User{
+		ID:      uuid.New(),
+		OAuthID: "google-123",
+		Email:   "person@example.com",
+	}
+
+	tests := []struct {
+		name             string
+		oauthUser        models.User
+		oauthGetErr      error
+		emailUser        models.User
+		emailGetErr      error
+		sessionCreateErr error
+		wantErr          error
+		wantCreate       int
+		wantEmailLookup  int
+		wantSession      int
+		wantSessionUser  uuid.UUID
+	}{
+		{
+			name:            "uses existing provider identity",
+			oauthUser:       existingUser,
+			wantSession:     1,
+			wantSessionUser: existingUser.ID,
+		},
+		{
+			name:            "creates user for new provider and email",
+			oauthGetErr:     gorm.ErrRecordNotFound,
+			emailGetErr:     gorm.ErrRecordNotFound,
+			wantCreate:      1,
+			wantEmailLookup: 1,
+			wantSession:     1,
+		},
+		{
+			name:            "rejects email owned by another identity",
+			oauthGetErr:     gorm.ErrRecordNotFound,
+			emailUser:       models.User{ID: uuid.New(), OAuthID: "other-id", Email: "person@example.com"},
+			wantErr:         domain.ErrAccountLinkRequired,
+			wantEmailLookup: 1,
+		},
+		{
+			name:             "returns session creation failure",
+			oauthUser:        existingUser,
+			sessionCreateErr: errors.New("session creation failed"),
+			wantErr:          errors.New("session creation failed"),
+			wantSession:      1,
+			wantSessionUser:  existingUser.ID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userRepo := &fakeAuthUserRepository{
+				oauthUser:   tt.oauthUser,
+				oauthGetErr: tt.oauthGetErr,
+				user:        tt.emailUser,
+				gotErr:      tt.emailGetErr,
+			}
+			sessionRepo := &fakeAuthSessionRepository{createErr: tt.sessionCreateErr}
+			auth := NewAuthUsecase(authTestOAuthConfig(), userRepo, sessionRepo)
+
+			_, err := auth.CompleteGoogleOAuth(authTestContext(http.StatusOK), "code-123")
+			if tt.wantErr != nil && err == nil {
+				t.Fatal("expected an error")
+			}
+			if tt.wantErr == nil && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.wantErr == domain.ErrAccountLinkRequired && !errors.Is(err, tt.wantErr) {
+				t.Fatalf("error = %v, want %v", err, tt.wantErr)
+			}
+			if got, want := userRepo.createCallCount, tt.wantCreate; got != want {
+				t.Errorf("user create calls = %d, want %d", got, want)
+			}
+			if got, want := userRepo.gotCallCount, tt.wantEmailLookup; got != want {
+				t.Errorf("email lookup calls = %d, want %d", got, want)
+			}
+			if got, want := sessionRepo.createCallCount, tt.wantSession; got != want {
+				t.Errorf("session create calls = %d, want %d", got, want)
+			}
+			if tt.wantSessionUser != uuid.Nil && sessionRepo.createdSession.UserID != tt.wantSessionUser {
+				t.Errorf("session user ID = %v, want %v", sessionRepo.createdSession.UserID, tt.wantSessionUser)
+			}
+		})
 	}
 }

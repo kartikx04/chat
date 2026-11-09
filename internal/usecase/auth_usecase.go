@@ -82,7 +82,7 @@ func (au *authUsecase) CompleteGoogleOAuth(ctx context.Context, code string) (st
 
 	user, err := au.userRepo.GetByOAuthID(ctx, googleUser.ID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", err
 		}
 
